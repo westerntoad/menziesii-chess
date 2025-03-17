@@ -46,7 +46,7 @@ $(TEST_DIR)/test_chessbot.o: $(TEST_DIR)/test_chessbot.c
 
 # Clean object and binary files
 clean:
-	rm -rf $(OBJ_DIR)/*.o $(BIN_DIR)/$(EXEC) $(BIN_DIR)/$(TEST_EXEC)
+	rm -rf $(OBJ_DIR)/*.o $(EXEC) $(TEST_EXEC)
 
 # Debug build (with debug symbols)
 debug: CFLAGS += $(DEBUG_CFLAGS)
