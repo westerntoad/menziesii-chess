@@ -60,6 +60,9 @@ run: $(EXEC)
 run-tests: tests
 	./$(TEST_EXEC)
 
+run-debug: debug
+	./$(EXEC)
+
 # Generate dependency files for automatic rebuild
 deps: $(OBJ_FILES:.o=.d)
 

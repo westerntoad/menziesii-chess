@@ -16,5 +16,6 @@ U64 nort_one(U64 bb);
 U64 east_one(U64 bb);
 U64 sout_one(U64 bb);
 U64 west_one(U64 bb);
+U64 delta_one(U64 bb, int dx, int dy);
 
 #endif  // TYPES_H
