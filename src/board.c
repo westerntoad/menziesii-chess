@@ -6,15 +6,26 @@
 #include "utils.h" // includes <stdio.h>
 
 #define INITIAL_MOVE_CAPACITY 100
+#define HALF_MOVE_MASK 0b11111111111
+
+bool can_castle(Board *board, bool color, bool side) {
+    return TEST_BIT(board->state_stack[board->ply], 27 + side + color*2);
+}
+
+int half_moves(Board *board) {
+    return board->state_stack[board->ply] & HALF_MOVE_MASK;
+}
 
 Board* from_fen(char* fen) {
     Board *board = (Board*)malloc(sizeof(Board));
     memset(board, 0, sizeof(Board));
     board->move_capacity = INITIAL_MOVE_CAPACITY;
     board->state_stack = (StateFlags *)calloc(board->move_capacity, sizeof(StateFlags));
+    board->state_stack[0] = 1 << 31;
     U64 bb;
     int i, j, color_idx = 0, piece_idx = 0;
     char c;
+
 
     for (i = 0, j = 0; fen[i] != ' '; i++, j++) {
         c = fen[i];
@@ -60,6 +71,8 @@ Board* from_fen(char* fen) {
 
     board->side_to_move = fen[i++] == 'w' ? WHITE : BLACK;
 
+    i++;
+
     if (fen[i] != '-') {
         for (; fen[i] != ' '; i++) {
             c = fen[i];
@@ -98,8 +111,10 @@ Board* from_fen(char* fen) {
 void print_board(Board *board) {
     U64 bb;
     int i, j, k, c, color, piece;
+    char castle_rights[5];
+    wprintf(L"          %c to move\n", board->side_to_move ? 'b' : 'w');
     for (i = 7; i >= 0; i--) {
-        wprintf(L" %d ", i + 1);
+        wprintf(L"     %d ", i + 1);
         for (j = 0; j < 8; j++) {
             c = i % 2 != j % 2 ? '.' : ',';
             for (k = 0; k < NUM_PIECES * NUM_COLORS; k++) {
@@ -116,9 +131,30 @@ void print_board(Board *board) {
         }
         wprintf(L"\n");
     }
-    wprintf(L"   ");
+    wprintf(L"       ");
     for (i = 0; i < 8; i++) {
         wprintf(L"%c ", 0x61 + i);
     }
+    wprintf(L"\n     ply %13d", board->ply);
+    i = 0;
+    if (can_castle(board, WHITE, KINGSIDE)) {
+        castle_rights[i] = 'K';
+        i++;
+    }
+    if (can_castle(board, WHITE, QUEENSIDE)) {
+        castle_rights[i] = 'Q';
+        i++;
+    }
+    if (can_castle(board, BLACK, KINGSIDE)) {
+        castle_rights[i] = 'k';
+        i++;
+    }
+    if (can_castle(board, BLACK, QUEENSIDE)) {
+        castle_rights[i] = 'q';
+        i++;
+    }
+    castle_rights[i] = '\0';
+    wprintf(L"\n     castle %10s", castle_rights);
+    wprintf(L"\n     half_move %7d", half_moves(board));
     wprintf(L"\n");
 }

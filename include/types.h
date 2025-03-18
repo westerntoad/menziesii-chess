@@ -10,6 +10,8 @@
 
 #define WHITE false
 #define BLACK true
+#define KINGSIDE false
+#define QUEENSIDE true
 
 #define PAWN_IDX   0
 #define KNIGHT_IDX 1
