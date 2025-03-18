@@ -9,7 +9,7 @@
 #define HALF_MOVE_MASK 0b11111111111
 
 bool can_castle(Board *board, bool color, bool side) {
-    return TEST_BIT(board->state_stack[board->ply], 27 + side + color*2);
+    return TEST_BIT(board->state_stack[board->ply], 27 + (side^1) + (color^1)*2);
 }
 
 int half_moves(Board *board) {
@@ -151,6 +151,10 @@ void print_board(Board *board) {
     }
     if (can_castle(board, BLACK, QUEENSIDE)) {
         castle_rights[i] = 'q';
+        i++;
+    }
+    if (i == 0) {
+        castle_rights[i] = '-';
         i++;
     }
     castle_rights[i] = '\0';
