@@ -2,6 +2,7 @@
 #define UTILS_H
 
 #include <stdio.h>
+#include <wchar.h>  // used for unicode printing
 #include <assert.h>
 
 #ifdef DEBUG

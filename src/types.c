@@ -5,8 +5,8 @@ void print_bb(U64 bb) {
     int i, j;
     for (i = 7; i >= 0; i--) {
         for (j = 0; j < 8; j++)
-            printf("%llu ", (bb >> (j+i*8)) & 1ULL);
-        printf("\n");
+            wprintf(L"%llu ", (bb >> (j+i*8)) & 1ULL);
+        wprintf(L"\n");
     }
 }
 

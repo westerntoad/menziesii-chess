@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wchar.h>  // used for unicode printing
 #include "board.h"
 #include "utils.h" // includes <stdio.h>
 
@@ -95,21 +96,29 @@ Board* from_fen(char* fen) {
 }
 
 void print_board(Board *board) {
-    printf("WHITE:\n");
-    print_bb(board->colors[WHITE]);
-    printf("BLACK:\n");
-    print_bb(board->colors[BLACK]);
-
-    printf("\nPAWN:\n");
-    print_bb(board->pieces[PAWN_IDX]);
-    printf("KNIGHT:\n");
-    print_bb(board->pieces[KNIGHT_IDX]);
-    printf("BISHOP:\n");
-    print_bb(board->pieces[BISHOP_IDX]);
-    printf("ROOK:\n");
-    print_bb(board->pieces[ROOK_IDX]);
-    printf("QUEEN:\n");
-    print_bb(board->pieces[QUEEN_IDX]);
-    printf("KING:\n");
-    print_bb(board->pieces[KING_IDX]);
+    U64 bb;
+    int i, j, k, c, color, piece;
+    for (i = 7; i >= 0; i--) {
+        wprintf(L" %d ", i + 1);
+        for (j = 0; j < 8; j++) {
+            c = i % 2 != j % 2 ? '.' : ',';
+            for (k = 0; k < NUM_PIECES * NUM_COLORS; k++) {
+                piece = k % NUM_PIECES;
+                color = k / NUM_PIECES;
+                bb = board->pieces[piece] & board->colors[color];
+                
+                if ((bb >> (j+i*8)) & 1ULL) {
+                    c = 0x2654 + (NUM_PIECES - piece - 1) + (color ^ 1) * NUM_PIECES;
+                    break;
+                }
+            }
+            wprintf(L"%lc ", c);
+        }
+        wprintf(L"\n");
+    }
+    wprintf(L"   ");
+    for (i = 0; i < 8; i++) {
+        wprintf(L"%c ", 0x61 + i);
+    }
+    wprintf(L"\n");
 }
