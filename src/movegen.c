@@ -1,5 +1,5 @@
 #include "movegen.h"
-#include "types.h"
+#include "utils.h"
 
 static U64 N_MOVE_TABLE[NUM_SQUARES];
 static U64 K_MOVE_TABLE[NUM_SQUARES];
@@ -59,23 +59,23 @@ void init_move_lookup_tables() {
 }
 
 U64 n_moves(U64 orig) {
-    return N_MOVE_TABLE[__builtin_clzll(orig)];
+    return N_MOVE_TABLE[LOG2(orig)];
 }
 
 U64 k_moves(U64 orig) {
-    return K_MOVE_TABLE[__builtin_clzll(orig)];
+    return K_MOVE_TABLE[LOG2(orig)];
 }
 
 U64 r_moves(U64 orig, U64 blocks) {
-    const int dxes[4] = { 0,  1,  0, -1};
-    const int dyes[4] = { 1,  0, -1,  0};
+    const int dxes[4] = { 0,  1,  0, -1 };
+    const int dyes[4] = { 1,  0, -1,  0 };
 
     return sliding_attacks(orig, blocks, dxes, dyes);
 }
 
 U64 b_moves(U64 orig, U64 blocks) {
-    const int dxes[4] = { 1, -1,  1, -1};
-    const int dyes[4] = { 1,  1, -1, -1};
+    const int dxes[4] = { 1, -1,  1, -1 };
+    const int dyes[4] = { 1,  1, -1, -1 };
 
     return sliding_attacks(orig, blocks, dxes, dyes);
 }

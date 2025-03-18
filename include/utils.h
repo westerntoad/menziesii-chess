@@ -1,8 +1,8 @@
 #ifndef UTILS_H // include guard
 #define UTILS_H
 
-#include <stdio.h>  // For fprintf()
-#include <assert.h> // For assert()
+#include <stdio.h>
+#include <assert.h>
 
 #ifdef DEBUG
     #define LOG(...) printf(__VA_ARGS__)
@@ -20,5 +20,9 @@
     #define debug_assert(cond, msg) ((void)0)
 #endif
 
+// https://stackoverflow.com/a/523737
+#define TEST_BIT(x,pos) ((x) & (1<<(pos)))
+#define SET_BIT(x,pos) ((x) | (1<<(pos)))
+#define LOG2(x) __builtin_clzll(x)
 
 #endif  // UTILS_H
