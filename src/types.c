@@ -1,11 +1,23 @@
 #include "types.h"
 #include "utils.h" // includes <stdio.h>
 
+Move new_move(Sq from, Sq to, MoveFlags flags) {
+    return (flags<<12) | (from<<6) | to;
+}
+
+Sq get_from(Move move) {
+    return (move >> 6) & 0x3f;
+}
+
+Sq get_to(Move move) {
+    return move & 0x3f;
+}
+
 void print_bb(U64 bb) {
     int i, j;
     for (i = 7; i >= 0; i--) {
         for (j = 0; j < 8; j++)
-            wprintf(L"%llu ", (bb >> (j+i*8)) & 1ULL);
+            wprintf(L"%lc ", ((bb >> (j+i*8)) & 1ULL) ? 0x2715 : 0x00b7);
         wprintf(L"\n");
     }
 }

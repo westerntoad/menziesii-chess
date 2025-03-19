@@ -8,6 +8,49 @@
 #define INITIAL_MOVE_CAPACITY 100
 #define HALF_MOVE_MASK 0b11111111111
 
+void make_move(Board *board, Move move) {
+    U64 from = 1ULL << get_from(move);
+    U64 to = 1ULL << get_to(move);
+    bool curr_color = board->side_to_move;
+    board->side_to_move ^= 1;
+    int i;
+
+    board->state_stack[board->ply + 1] = board->state_stack[board->ply];
+    board->ply++;
+    
+    for (i = 0; i < NUM_PIECES; i++) {
+        if ((board->pieces[i] & ~from) != board->pieces[i]) {
+            break;
+        }
+    }
+
+    board->pieces[i] &= ~from;
+    board->colors[curr_color] &= ~from;
+    board->pieces[i] |= to;
+    board->colors[curr_color] |= to;
+}
+
+void unmake_move(Board *board, Move move) {
+    U64 from = 1ULL << get_from(move);
+    U64 to = 1ULL << get_to(move);
+    board->side_to_move ^= 1;
+    bool curr_color = board->side_to_move;
+    int i;
+    board->ply--;
+
+    for (i = 0; i < NUM_PIECES; i++) {
+        if ((board->pieces[i] & ~to) != board->pieces[i]) {
+            break;
+        }
+    }
+
+    board->pieces[i] &= ~to;
+    board->colors[curr_color] &= ~to;
+    board->pieces[i] |= from;
+    board->colors[curr_color] |= from;
+
+}
+
 bool can_castle(Board *board, bool color, bool side) {
     return TEST_BIT(board->state_stack[board->ply], 27 + (side^1) + (color^1)*2);
 }

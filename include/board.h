@@ -14,6 +14,8 @@ typedef struct {
     int move_capacity;
 } Board;
 
+void make_move(Board *board, Move move);
+void unmake_move(Board *board, Move move);
 bool can_castle(Board *board, bool color, bool side);
 int half_moves(Board *board);
 void print_board(Board *board);

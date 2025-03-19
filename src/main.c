@@ -10,7 +10,16 @@ int main() {
     if (fwide(stdout, 0) <= 0) {
         fwide(stdout, 1);
     }
+
     init_move_lookup_tables();
+
     Board *board = from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    print_board(board);
+    Move g1f3 = new_move(6, 21, 0);
+    make_move(board, g1f3);
+    wprintf(L"\n");
+    print_board(board);
+    unmake_move(board, g1f3);
+    wprintf(L"\n");
     print_board(board);
 }
