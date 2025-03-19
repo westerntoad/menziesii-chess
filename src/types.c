@@ -52,6 +52,10 @@ void print_move(Move move) {
     }
 }
 
+U64 pop_lsb(U64 *bb) {
+    return *bb & ~(*bb &= *bb - 1);
+}
+
 U64 nort_one(U64 bb) {
     return bb << 8;
 }

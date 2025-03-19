@@ -84,6 +84,7 @@ Sq get_to(Move move);
 bool is_promotion(Move move);
 void print_move(Move move);
 
+U64 pop_lsb(U64 *bb);
 U64 nort_one(U64 bb);
 U64 east_one(U64 bb);
 U64 sout_one(U64 bb);

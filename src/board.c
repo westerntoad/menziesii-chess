@@ -3,10 +3,36 @@
 #include <string.h>
 #include <wchar.h>  // used for unicode printing
 #include "board.h"
+#include "movegen.h"
 #include "utils.h" // includes <stdio.h>
 
 #define INITIAL_MOVE_CAPACITY 100
 #define HALF_MOVE_MASK 0x1ffff
+
+static U64 danger_squares(Board *board) {
+    U64 friendly = board->colors[board->side_to_move];
+    U64 enemy = board->colors[board->side_to_move ^ 1];
+    U64 friendly_k = board->pieces[KING_IDX] & friendly;
+    U64 enemy_n = board->pieces[KNIGHT_IDX] & friendly;
+    U64 enemy_b = board->pieces[BISHOP_IDX] & friendly;
+    U64 enemy_r = board->pieces[ROOK_IDX] & friendly;
+    U64 enemy_q = board->pieces[QUEEN_IDX] & friendly;
+    U64 enemy_k = board->pieces[KING_IDX] & friendly;
+    U64 danger_squares = 0ULL;
+    while(enemy_n)
+        danger_squares |= n_moves(pop_lsb(&enemy_n));
+    while(enemy_b)
+        danger_squares |= b_moves(pop_lsb(&enemy_b), enemy | (friendly & !friendly_k)) & ~friendly;
+    while(enemy_r)
+        danger_squares |= r_moves(pop_lsb(&enemy_r), enemy | (friendly & !friendly_k)) & ~friendly;
+    while(enemy_q)
+        danger_squares |= q_moves(pop_lsb(&enemy_q), enemy | (friendly & !friendly_k)) & ~friendly;
+    while(enemy_k)
+        danger_squares |= k_moves(pop_lsb(&enemy_k));
+
+    return danger_squares;
+
+}
 
 void make_move(Board *board, Move move) {
     U64 from = 1ULL << get_from(move);
@@ -187,6 +213,12 @@ void unmake_move(Board *board, Move move) {
     board->colors[curr_color] |= from;
 }
 
+int legal_moves(Board *board) {
+    wprintf(L"\n");
+    print_bb(danger_squares(board));
+    return 0;
+}
+
 bool can_castle(Board *board, bool color, bool side) {
     return TEST_BIT(board->state_stack[board->ply], 27 + (side^1) + (color^1)*2);
 }
@@ -198,8 +230,8 @@ int half_moves(Board *board) {
 Board* from_fen(char* fen) {
     Board *board = (Board*)malloc(sizeof(Board));
     memset(board, 0, sizeof(Board));
-    board->move_capacity = INITIAL_MOVE_CAPACITY;
-    board->state_stack = (StateFlags *)calloc(board->move_capacity, sizeof(StateFlags));
+    board->stack_capacity = INITIAL_MOVE_CAPACITY;
+    board->state_stack = (StateFlags *)calloc(board->stack_capacity, sizeof(StateFlags));
     board->state_stack[0] = 1 << 31;
     U64 bb;
     int i, j, color_idx = 0, piece_idx = 0;
