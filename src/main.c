@@ -13,20 +13,20 @@ int main() {
 
     init_move_lookup_tables();
 
-    Board *board = from_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1");
-    Move mv = new_move(0, 0, 0b0011);
+    Board *board = from_fen("4k3/8/8/8/8/8/6P1/4K3 w - - 0 1");
+    Move mv = new_move(14, 30, 0b0001);
     print_board(board);
     make_move(board, mv);
     wprintf(L"\nAFTER MAKE_MOVE ");
     print_move(mv);
     wprintf(L"\n");
     print_board(board);
-    unmake_move(board, mv);
+    /*unmake_move(board, mv);
     wprintf(L"\nAFTER UNMAKE_MOVE ");
     print_move(mv);
     wprintf(L"\n");
     print_board(board);
-    wprintf(L"\n\n\n");
+    wprintf(L"\n\n\n");*/
     
-    //wprintf(L"\n\n%x\n\n", ~((Move)(0b11 << 27)));
+    wprintf(L"\n\n%x\n\n", ~((StateFlags)(0b1 << 26)));
 }

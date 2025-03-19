@@ -79,6 +79,18 @@ void make_move(Board *board, Move move) {
         next_state &= 0xfffff800; // clean half move clock
     }
 
+    if (move >> 12 == 1) { // check if double pawn push
+        next_state |= 0x04000000; // set ep target exist
+        if (curr_color) { // if black
+            next_state |= LOG2(nort_one(to)) << 20;
+        } else {
+            next_state |= LOG2(sout_one(to)) << 20;
+        }
+    } else {
+        // if not double pawn push, clear ep target mask
+        next_state &= 0xfbffffff;
+    }
+
     board->pieces[i] &= ~from;
     board->colors[curr_color] &= ~from;
     board->pieces[i] |= to;
@@ -258,6 +270,7 @@ Board* from_fen(char* fen) {
 }
 
 void print_board(Board *board) {
+    StateFlags state = board->state_stack[board->ply];
     U64 bb;
     int i, j, k, c, color, piece;
     char castle_rights[5];
@@ -309,5 +322,11 @@ void print_board(Board *board) {
     castle_rights[i] = '\0';
     wprintf(L"\n     castle %10s", castle_rights);
     wprintf(L"\n     half_move %7d", half_moves(board));
+    wprintf(L"\n     ep_target %5s", "");
+    if (TEST_BIT(state, 26)) {
+        print_sq((state >> 20) & 0x3f);
+    } else {
+        wprintf(L" -");
+    }
     wprintf(L"\n");
 }
