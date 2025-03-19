@@ -13,8 +13,8 @@ int main() {
 
     init_move_lookup_tables();
 
-    Board *board = from_fen("7k/3r4/8/8/3N4/8/8/K7 b - - 0 1");
-    Move mv = new_move(51, 27, 0b0100);
+    Board *board = from_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1");
+    Move mv = new_move(0, 0, 0b0011);
     print_board(board);
     make_move(board, mv);
     wprintf(L"\nAFTER MAKE_MOVE ");
@@ -27,4 +27,6 @@ int main() {
     wprintf(L"\n");
     print_board(board);
     wprintf(L"\n\n\n");
+    
+    //wprintf(L"\n\n%x\n\n", ~((Move)(0b11 << 27)));
 }

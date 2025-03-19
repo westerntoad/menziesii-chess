@@ -4,6 +4,7 @@
 #include "types.h"
 
 #define MAX_NUM_MOVES 17_697
+#define MAX_NUM_LEGAL_MOVES 218
 
 typedef struct {
     U64  colors[NUM_COLORS];
@@ -12,6 +13,7 @@ typedef struct {
     bool side_to_move;
     StateFlags *state_stack;
     int move_capacity;
+    Move move_buffer[MAX_NUM_LEGAL_MOVES+1];
 } Board;
 
 void make_move(Board *board, Move move);

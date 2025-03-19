@@ -11,11 +11,54 @@
 void make_move(Board *board, Move move) {
     U64 from = 1ULL << get_from(move);
     U64 to = 1ULL << get_to(move);
+    U64 aux1, aux2;
     bool curr_color = board->side_to_move;
-    StateFlags next_state = board->state_stack[board->ply];
+    StateFlags next_state = board->state_stack[board->ply] + 1;
     int i, j;
 
     board->ply++;
+    board->side_to_move ^= 1;
+
+    if (((move >> 12) & 0b1110) == 0b10) { // check if castle
+        from = 0x8100000000000081ULL; // rook origin
+        to   = 0x2800000000000028ULL; // rook target
+        aux1 = 0x1000000000000010ULL; // king origin
+        aux2 = 0x4400000000000044ULL; // king target
+
+        if ((move>>12) & 1) { // if is long castle
+            from &= 0x0100000000000001ULL;
+            to   &= 0x0800000000000008ULL;
+            aux2 &= 0x0400000000000004ULL;
+        } else {
+            from &= 0x8000000000000080ULL;
+            to   &= 0x2000000000000020ULL;
+            aux2 &= 0x4000000000000040ULL;
+        }
+
+        if (curr_color) { // if black
+            from &= 0xff00000000000000ULL;
+            to   &= 0xff00000000000000ULL;
+            aux1 &= 0xff00000000000000ULL;
+            aux2 &= 0xff00000000000000ULL;
+            next_state &= 0xe7ffffff; // clear black castling-bits
+        } else {
+            from &= 0x00000000000000ffULL;
+            to   &= 0x00000000000000ffULL;
+            aux1 &= 0x00000000000000ffULL;
+            aux2 &= 0x00000000000000ffULL;
+            next_state &= 0x9fffffff; // clear white castling-bits
+        }
+
+        board->pieces[ROOK_IDX] &= ~from; // remove old pieces
+        board->pieces[KING_IDX] &= ~aux1;
+        board->colors[curr_color] &= ~(from | aux1);
+        board->pieces[ROOK_IDX] |= to; // add new pieces
+        board->pieces[KING_IDX] |= aux2;
+        board->colors[curr_color] |= to | aux2;
+
+        goto end; // gosh
+    }
+
     
     for (i = 0; i < NUM_PIECES; i++) {
         if (board->pieces[i] & from)
@@ -33,8 +76,7 @@ void make_move(Board *board, Move move) {
 
         next_state |= j << 17; // store captured piece-index
         next_state |= LOG2(to) << 11; // store captured piece prev square
-    } else if (0) { // TODO check if castle
-        
+        next_state &= 0xfffff800; // clean half move clock
     }
 
     board->pieces[i] &= ~from;
@@ -42,18 +84,58 @@ void make_move(Board *board, Move move) {
     board->pieces[i] |= to;
     board->colors[curr_color] |= to;
 
+end:
     board->state_stack[board->ply] = next_state; // TODO check if ply >= capacity
-    board->side_to_move ^= 1;
 }
 
 void unmake_move(Board *board, Move move) {
     U64 from = 1ULL << get_from(move);
     U64 to = 1ULL << get_to(move);
     U64 captured_bb;
+    U64 aux1, aux2;
     board->side_to_move ^= 1;
     bool curr_color = board->side_to_move;
     int i, captured_piece_idx;
     StateFlags next_state = board->state_stack[board->ply--];
+
+    if (((move >> 12) & 0b1110) == 0b10) { // check if castle
+        from = 0x8100000000000081ULL; // rook origin
+        to   = 0x2800000000000028ULL; // rook target
+        aux1 = 0x1000000000000010ULL; // king origin
+        aux2 = 0x4400000000000044ULL; // king target
+
+        if ((move>>12) & 1) { // if is long castle
+            from &= 0x0100000000000001ULL;
+            to   &= 0x0800000000000008ULL;
+            aux2 &= 0x0400000000000004ULL;
+        } else {
+            from &= 0x8000000000000080ULL;
+            to   &= 0x2000000000000020ULL;
+            aux2 &= 0x4000000000000040ULL;
+        }
+
+        if (curr_color) { // if black
+            from &= 0xff00000000000000ULL;
+            to   &= 0xff00000000000000ULL;
+            aux1 &= 0xff00000000000000ULL;
+            aux2 &= 0xff00000000000000ULL;
+        } else {
+            from &= 0x00000000000000ffULL;
+            to   &= 0x00000000000000ffULL;
+            aux1 &= 0x00000000000000ffULL;
+            aux2 &= 0x00000000000000ffULL;
+        }
+
+        board->pieces[ROOK_IDX] &= ~to; // remove old pieces
+        board->pieces[KING_IDX] &= ~aux2;
+        board->colors[curr_color] &= ~(to | aux2);
+        board->pieces[ROOK_IDX] |= from; // add new pieces
+        board->pieces[KING_IDX] |= aux1;
+        board->colors[curr_color] |= from | aux1;
+
+        return;
+    }
+
 
     for (i = 0; i < NUM_PIECES; i++) {
         if (board->pieces[i] & to) {
