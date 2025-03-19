@@ -24,6 +24,6 @@
 // https://stackoverflow.com/a/523737
 #define TEST_BIT(x,pos) ((x) & (1<<(pos)))
 #define SET_BIT(x,pos) ((x) | (1<<(pos)))
-#define LOG2(x) __builtin_clzll(x)
+#define LOG2(x) __builtin_ctzll(x)
 
 #endif  // UTILS_H

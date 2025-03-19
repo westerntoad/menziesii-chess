@@ -13,17 +13,18 @@ int main() {
 
     init_move_lookup_tables();
 
-    Board *board = from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    Board *board = from_fen("7k/3r4/8/8/3N4/8/8/K7 b - - 0 1");
+    Move mv = new_move(51, 27, 0b0100);
     print_board(board);
-    Move mv = new_move(6, 21, 0);
-    mv |= 0b1001 << 12;
     make_move(board, mv);
+    wprintf(L"\nAFTER MAKE_MOVE ");
+    print_move(mv);
     wprintf(L"\n");
     print_board(board);
     unmake_move(board, mv);
+    wprintf(L"\nAFTER UNMAKE_MOVE ");
+    print_move(mv);
     wprintf(L"\n");
     print_board(board);
-    wprintf(L"\n\n\n");
-    print_move(mv);
     wprintf(L"\n\n\n");
 }

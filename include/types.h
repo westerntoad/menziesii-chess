@@ -69,7 +69,7 @@ typedef uint_fast8_t MoveFlags;
  * 0000 0000 0000 0000 0000 0000 0000 0000 
  *        v-----v                          ep target square-index
  * 0000 0000 0000 0000 0000 0000 0000 0000 
- *                v-v                      captured piece index ONE-INDEXED (pawn = 1, rook = 4, etc)
+ *                v-v                      captured piece index (pawn = 0, rook = 3, etc)
  * 0000 0000 0000 0000 0000 0000 0000 0000
  *                   v------v              captured piece previous square
  * 0000 0000 0000 0000 0000 0000 0000 0000 

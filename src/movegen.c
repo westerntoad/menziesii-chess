@@ -52,7 +52,7 @@ void init_move_lookup_tables() {
     int i = 0;
 
     for (i = 0; i < NUM_SQUARES; i++) {
-        U64 bb = 1ULL << (NUM_SQUARES - 1 - i);
+        U64 bb = 1ULL << i;
         N_MOVE_TABLE[i] = n_moves_slow(bb);
         K_MOVE_TABLE[i] = k_moves_slow(bb);
     }
