@@ -16,10 +16,14 @@ int main() {
     Board *board = from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     print_board(board);
     Move mv = new_move(6, 21, 0);
+    mv |= 0b1001 << 12;
     make_move(board, mv);
     wprintf(L"\n");
     print_board(board);
     unmake_move(board, mv);
     wprintf(L"\n");
     print_board(board);
+    wprintf(L"\n\n\n");
+    print_move(mv);
+    wprintf(L"\n\n\n");
 }

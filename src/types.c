@@ -1,6 +1,10 @@
 #include "types.h"
 #include "utils.h" // includes <stdio.h>
 
+void print_sq(Sq sq) {
+    wprintf(L"%c%d", 0x61 + (sq%8), sq/8 + 1);
+}
+
 Move new_move(Sq from, Sq to, MoveFlags flags) {
     return (flags<<12) | (from<<6) | to;
 }
@@ -13,12 +17,29 @@ Sq get_to(Move move) {
     return move & 0x3f;
 }
 
-void print_bb(U64 bb) {
-    int i, j;
-    for (i = 7; i >= 0; i--) {
-        for (j = 0; j < 8; j++)
-            wprintf(L"%lc ", ((bb >> (j+i*8)) & 1ULL) ? 0x2715 : 0x00b7);
-        wprintf(L"\n");
+bool is_promotion(Move move) {
+    return move & 0x8000;
+}
+
+void print_move(Move move) {
+    print_sq(get_from(move));
+    print_sq(get_to(move));
+    
+    if (is_promotion(move)) {
+        switch ((move >> 12) & 0x03) {
+            case 0x00:
+                wprintf(L"n");
+                break;
+            case 0x01:
+                wprintf(L"b");
+                break;
+            case 0x02:
+                wprintf(L"r");
+                break;
+            case 0x03:
+                wprintf(L"q");
+                break;
+        }
     }
 }
 
@@ -65,3 +86,13 @@ U64 delta_one(U64 bb, int dx, int dy) {
 
     return dbb;
 }
+
+void print_bb(U64 bb) {
+    int i, j;
+    for (i = 7; i >= 0; i--) {
+        for (j = 0; j < 8; j++)
+            wprintf(L"%lc ", ((bb >> (j+i*8)) & 1ULL) ? 0x2715 : 0x00b7);
+        wprintf(L"\n");
+    }
+}
+

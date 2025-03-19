@@ -78,15 +78,19 @@ typedef uint_fast8_t MoveFlags;
  */
 typedef uint32_t StateFlags;
 
+void print_sq(Sq sq);
+
 Move new_move(Sq from, Sq to, MoveFlags flags);
 Sq get_from(Move move);
 Sq get_to(Move move);
+bool is_promotion(Move move);
+void print_move(Move move);
 
-void print_bb(U64 bb);
 U64 nort_one(U64 bb);
 U64 east_one(U64 bb);
 U64 sout_one(U64 bb);
 U64 west_one(U64 bb);
 U64 delta_one(U64 bb, int dx, int dy);
+void print_bb(U64 bb);
 
 #endif  // TYPES_H
