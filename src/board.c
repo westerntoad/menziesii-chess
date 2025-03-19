@@ -12,43 +12,67 @@ void make_move(Board *board, Move move) {
     U64 from = 1ULL << get_from(move);
     U64 to = 1ULL << get_to(move);
     bool curr_color = board->side_to_move;
-    board->side_to_move ^= 1;
-    int i;
+    StateFlags next_state = board->state_stack[board->ply];
+    int i, j;
 
-    board->state_stack[board->ply + 1] = board->state_stack[board->ply];
     board->ply++;
     
     for (i = 0; i < NUM_PIECES; i++) {
-        if ((board->pieces[i] & ~from) != board->pieces[i]) {
+        if (board->pieces[i] & from)
             break;
+    }
+    
+    if (move & 0x4000) { // check if capture
+        for (j = 0; j < NUM_PIECES; j++) {
+            if (board->pieces[i] & to)
+                break;
         }
+
+        board->pieces[j] &= ~to;
+        board->colors[curr_color ^ 1] &= ~to;
+
+        next_state |= (j+1) << 17; // store captured piece-index
+        next_state |= LOG2(to) << 11; // store captured piece prev square
+    } else if (0) { // TODO check if castle
+        
     }
 
     board->pieces[i] &= ~from;
     board->colors[curr_color] &= ~from;
     board->pieces[i] |= to;
     board->colors[curr_color] |= to;
+
+
+    board->state_stack[board->ply + 1] = next_state; // TODO check if ply >= capacity
+    board->side_to_move ^= 1;
 }
 
 void unmake_move(Board *board, Move move) {
     U64 from = 1ULL << get_from(move);
     U64 to = 1ULL << get_to(move);
+    U64 captured_bb;
     board->side_to_move ^= 1;
     bool curr_color = board->side_to_move;
-    int i;
-    board->ply--;
+    int i, captured_piece_idx;
+    StateFlags next_state = board->state_stack[--board->ply];
 
     for (i = 0; i < NUM_PIECES; i++) {
-        if ((board->pieces[i] & ~to) != board->pieces[i]) {
+        if (board->pieces[i] & to) {
             break;
         }
+    }
+
+    if (move & 0x4000) { // check if capture
+        captured_piece_idx = (next_state >> 17) & 0x07;
+        captured_bb = 1ULL << ((next_state >> 11) & 0x3f);
+
+        board->pieces[captured_piece_idx] |= captured_bb;
     }
 
     board->pieces[i] &= ~to;
     board->colors[curr_color] &= ~to;
     board->pieces[i] |= from;
     board->colors[curr_color] |= from;
-
 }
 
 bool can_castle(Board *board, bool color, bool side) {

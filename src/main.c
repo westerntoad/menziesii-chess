@@ -15,11 +15,11 @@ int main() {
 
     Board *board = from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     print_board(board);
-    Move g1f3 = new_move(6, 21, 0);
-    make_move(board, g1f3);
+    Move mv = new_move(6, 21, 0);
+    make_move(board, mv);
     wprintf(L"\n");
     print_board(board);
-    unmake_move(board, g1f3);
+    unmake_move(board, mv);
     wprintf(L"\n");
     print_board(board);
 }
