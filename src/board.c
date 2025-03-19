@@ -65,7 +65,12 @@ void make_move(Board *board, Move move) {
             break;
     }
     
-    if (move & 0x4000) { // check if capture
+    if (move >> 12 == 5) { // check if ep capture
+        aux1 = curr_color ? sout_one(to) : nort_one(to); // ep-captured pawn
+        
+        board->pieces[PAWN_IDX] &= aux1;
+        board->colors[curr_color ^ 1] &= aux1;
+    } else if (move & 0x4000) { // check if capture
         for (j = 0; j < NUM_PIECES; j++) {
             if (board->pieces[j] & to)
                 break;
@@ -78,6 +83,7 @@ void make_move(Board *board, Move move) {
         next_state |= LOG2(to) << 11; // store captured piece prev square
         next_state &= 0xfffff800; // clean half move clock
     }
+
 
     if (move >> 12 == 1) { // check if double pawn push
         next_state |= 0x04000000; // set ep target exist
@@ -155,8 +161,13 @@ void unmake_move(Board *board, Move move) {
         }
     }
 
-    if (move & 0x4000) { // check if capture
-        captured_piece_idx = (next_state >> 17) & 0x07;
+    if (move >> 12 == 5) { // check if ep capture
+        aux1 = curr_color ? nort_one(to) : sout_one(to); // ep-captured pawn
+        
+        board->pieces[PAWN_IDX] |= aux1;
+        board->colors[curr_color ^ 1] |= aux1;
+    } else if (move & 0x4000) { // check if capture
+        captured_piece_idx = (next_state >> 17) & 0x07; // restore captured piece from state_stack
         captured_bb = 1ULL << ((next_state >> 11) & 0x3f);
 
         board->pieces[captured_piece_idx] |= captured_bb;

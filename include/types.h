@@ -46,7 +46,7 @@ typedef uint_fast16_t Move;
  * 0010 short castle
  * 0011 long castle
  * 0100 capture
- * 0101 ep-capture
+ * 0101 ep capture
  * 1000 n promotion
  * 1001 b promotion
  * 1010 r promotion
