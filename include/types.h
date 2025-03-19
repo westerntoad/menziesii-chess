@@ -71,9 +71,7 @@ typedef uint_fast8_t MoveFlags;
  * 0000 0000 0000 0000 0000 0000 0000 0000 
  *                v-v                      captured piece index (pawn = 0, rook = 3, etc)
  * 0000 0000 0000 0000 0000 0000 0000 0000
- *                   v------v              captured piece previous square
- * 0000 0000 0000 0000 0000 0000 0000 0000 
- *                           v-----------v half-move clock
+ *                   v-------------------v half-move clock
  * 0000 0000 0000 0000 0000 0000 0000 0000 
  */
 typedef uint32_t StateFlags;

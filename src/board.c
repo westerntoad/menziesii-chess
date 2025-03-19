@@ -6,7 +6,7 @@
 #include "utils.h" // includes <stdio.h>
 
 #define INITIAL_MOVE_CAPACITY 100
-#define HALF_MOVE_MASK 0b11111111111
+#define HALF_MOVE_MASK 0x1ffff
 
 void make_move(Board *board, Move move) {
     U64 from = 1ULL << get_from(move);
@@ -70,6 +70,7 @@ void make_move(Board *board, Move move) {
         
         board->pieces[PAWN_IDX] &= aux1;
         board->colors[curr_color ^ 1] &= aux1;
+        next_state &= 0xfffe0000; // clear half-move clock
     } else if (move & 0x4000) { // check if capture
         for (j = 0; j < NUM_PIECES; j++) {
             if (board->pieces[j] & to)
@@ -80,8 +81,7 @@ void make_move(Board *board, Move move) {
         board->colors[curr_color ^ 1] &= ~to;
 
         next_state |= j << 17; // store captured piece-index
-        next_state |= LOG2(to) << 11; // store captured piece prev square
-        next_state &= 0xfffff800; // clean half move clock
+        next_state &= 0xfffe0000; // clear half-move clock
     }
 
 
@@ -97,6 +97,15 @@ void make_move(Board *board, Move move) {
         next_state &= 0xfbffffff;
     }
 
+    // additional checks for prohibiting castling
+    if (from & 0x1000000000000010ULL) { // if origin is a king
+        next_state &= curr_color ? 0xe7ffffff : 0x9fffffff;
+    } else if (from & 0x8000000000000080) { // if origin is kingside rook
+        next_state &= curr_color ? 0xefffffff : 0xbfffffff;
+    } else if (from & 0x0100000000000001) { // if origin is queenside rook
+        next_state &= curr_color ? 0xf7ffffff : 0xdfffffff;
+    }
+
     board->pieces[i] &= ~from;
     board->colors[curr_color] &= ~from;
     board->pieces[i] |= to;
@@ -109,7 +118,6 @@ end:
 void unmake_move(Board *board, Move move) {
     U64 from = 1ULL << get_from(move);
     U64 to = 1ULL << get_to(move);
-    U64 captured_bb;
     U64 aux1, aux2;
     board->side_to_move ^= 1;
     bool curr_color = board->side_to_move;
@@ -168,10 +176,9 @@ void unmake_move(Board *board, Move move) {
         board->colors[curr_color ^ 1] |= aux1;
     } else if (move & 0x4000) { // check if capture
         captured_piece_idx = (next_state >> 17) & 0x07; // restore captured piece from state_stack
-        captured_bb = 1ULL << ((next_state >> 11) & 0x3f);
 
-        board->pieces[captured_piece_idx] |= captured_bb;
-        board->colors[curr_color ^ 1] |= captured_bb;
+        board->pieces[captured_piece_idx] |= to;
+        board->colors[curr_color ^ 1] |= to;
     }
 
     board->pieces[i] &= ~to;
