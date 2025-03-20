@@ -10,9 +10,11 @@
 #define HALF_MOVE_MASK 0x1ffff
 
 static U64 danger_squares(Board *board) {
+    U64 aux1, aux2;
     U64 friendly = board->colors[board->side_to_move];
     U64 enemy = board->colors[board->side_to_move ^ 1];
     U64 friendly_k = board->pieces[KING_IDX] & friendly;
+    U64 enemy_p = board->pieces[PAWN_IDX] & enemy;
     U64 enemy_n = board->pieces[KNIGHT_IDX] & enemy;
     U64 enemy_b = board->pieces[BISHOP_IDX] & enemy;
     U64 enemy_r = board->pieces[ROOK_IDX] & enemy;
@@ -20,14 +22,19 @@ static U64 danger_squares(Board *board) {
     U64 enemy_k = board->pieces[KING_IDX] & enemy;
     U64 blockers = enemy | (friendly & ~friendly_k);
     U64 danger_squares = 0ULL;
+    while (enemy_p) {
+        aux1 = pop_lsb(&enemy_p);
+        aux2 = east_one(aux1) | west_one(aux1);
+        danger_squares |= board->side_to_move ? nort_one(aux2) : sout_one(aux2);
+    }
     while(enemy_n)
         danger_squares |= n_moves(pop_lsb(&enemy_n));
     while(enemy_b)
-        danger_squares |= b_moves(pop_lsb(&enemy_b), blockers) & ~enemy;
+        danger_squares |= b_moves(pop_lsb(&enemy_b), blockers);
     while(enemy_r)
-        danger_squares |= r_moves(pop_lsb(&enemy_r), blockers) & ~enemy;
+        danger_squares |= r_moves(pop_lsb(&enemy_r), blockers);
     while(enemy_q)
-        danger_squares |= q_moves(pop_lsb(&enemy_q), blockers) & ~enemy;
+        danger_squares |= q_moves(pop_lsb(&enemy_q), blockers);
     while(enemy_k)
         danger_squares |= k_moves(pop_lsb(&enemy_k));
 
@@ -214,11 +221,11 @@ void unmake_move(Board *board, Move move) {
     board->colors[curr_color] |= from;
 }
 
-int legal_moves(Board *board) {
+Move* legal_moves(Board *board) {
+    Move *buff = malloc(MAX_NUM_LEGAL_MOVES); // TODO better
     U64 aux1, aux2;
     Sq from;
     Move move;
-    Move *buff = board->move_buffer;
     int i = 0;
     bool curr_side = board->side_to_move;
     U64 friendly = board->colors[curr_side];
@@ -235,7 +242,9 @@ int legal_moves(Board *board) {
         buff[i++] = move;
     }
     
-    return i;
+    buff[i++] = 0;
+
+    return buff;
 }
 
 bool can_castle(Board *board, bool color, bool side) {
@@ -400,13 +409,10 @@ void print_board(Board *board) {
     wprintf(L"\n");
 }
 
-void print_move_buffer(Board *board, int n) {
-    assert(n < MAX_NUM_LEGAL_MOVES);
-    
-    int i;
-    for (i = 0; i < n; i++) {
-        wprintf(L"\n%-4d", i+1);
-        print_move(board->move_buffer[i]);
+void print_move_buffer(Move *buffer) {
+    for (; *buffer; buffer++) {
+        wprintf(L"\n");
+        print_move(*buffer);
     }
     wprintf(L"\n");
 }
