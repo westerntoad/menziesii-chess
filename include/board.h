@@ -13,7 +13,7 @@ typedef struct {
     bool side_to_move;
     StateFlags *state_stack;
     int stack_capacity;
-    Move move_buffer[MAX_NUM_LEGAL_MOVES+1];
+    Move move_buffer[MAX_NUM_LEGAL_MOVES];
 } Board;
 
 void make_move(Board *board, Move move);
@@ -22,6 +22,7 @@ int legal_moves(Board *board);
 bool can_castle(Board *board, bool color, bool side);
 int half_moves(Board *board);
 void print_board(Board *board);
+void print_move_buffer(Board *board, int n);
 Board* from_fen(char* fen);
 
 #endif  // BOARD_H

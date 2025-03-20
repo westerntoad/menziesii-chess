@@ -215,9 +215,27 @@ void unmake_move(Board *board, Move move) {
 }
 
 int legal_moves(Board *board) {
-    wprintf(L"\n");
-    print_bb(danger_squares(board));
-    return 0;
+    U64 aux1, aux2;
+    Sq from;
+    Move move;
+    Move *buff = board->move_buffer;
+    int i = 0;
+    bool curr_side = board->side_to_move;
+    U64 friendly = board->colors[curr_side];
+    U64 enemy = board->colors[curr_side ^ 1];
+    U64 ds = danger_squares(board);
+
+
+    aux1 = board->pieces[KING_IDX] & friendly;
+    from = LOG2(aux1);
+    aux2 = k_moves(aux1) & ~ds & ~friendly;
+    while (aux2) {
+        aux1 = pop_lsb(&aux2);
+        move = new_move(from, LOG2(aux1), aux1 & enemy ? 4 : 0);
+        buff[i++] = move;
+    }
+    
+    return i;
 }
 
 bool can_castle(Board *board, bool color, bool side) {
@@ -378,6 +396,17 @@ void print_board(Board *board) {
         print_sq((state >> 20) & 0x3f);
     } else {
         wprintf(L" -");
+    }
+    wprintf(L"\n");
+}
+
+void print_move_buffer(Board *board, int n) {
+    assert(n < MAX_NUM_LEGAL_MOVES);
+    
+    int i;
+    for (i = 0; i < n; i++) {
+        wprintf(L"\n%-4d", i+1);
+        print_move(board->move_buffer[i]);
     }
     wprintf(L"\n");
 }

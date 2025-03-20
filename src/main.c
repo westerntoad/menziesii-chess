@@ -15,7 +15,18 @@ int main() {
 
     Board *board = from_fen("8/8/4k3/8/2P1R1n1/8/8/4K3 b - - 0 1");
     print_board(board);
-    legal_moves(board);
+    int n = legal_moves(board);
+    print_move_buffer(board, n);
+    for (int i = 0; i < n; i++) {
+        Move move = board->move_buffer[i];
+        wprintf(L"\nAFTER MOVE ");
+        print_move(move);
+        wprintf(L"\n");
+        make_move(board, move);
+        print_board(board);
+        unmake_move(board, move);
+    }
+    print_board(board);
     /*Move mv = new_move(63, 55, 0b0000);
     print_board(board);
     make_move(board, mv);
