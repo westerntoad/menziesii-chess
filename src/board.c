@@ -142,6 +142,19 @@ void make_move(Board *board, Move move) {
 
     board->pieces[i] &= ~from;
     board->colors[curr_color] &= ~from;
+
+    if (move & 0x8000) { // check if promotion
+        j = (move >> 12) & 3;
+        if (j == 0)
+            i = KNIGHT_IDX;
+        else if (j == 1)
+            i = BISHOP_IDX;
+        else if (j == 2)
+            i = ROOK_IDX;
+        else
+            i = QUEEN_IDX;
+    }
+
     board->pieces[i] |= to;
     board->colors[curr_color] |= to;
 
@@ -217,6 +230,10 @@ void unmake_move(Board *board, Move move) {
 
     board->pieces[i] &= ~to;
     board->colors[curr_color] &= ~to;
+
+    if (move & 0x8000) // check if promotion
+        i = PAWN_IDX;
+
     board->pieces[i] |= from;
     board->colors[curr_color] |= from;
 }
