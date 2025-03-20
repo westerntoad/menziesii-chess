@@ -13,7 +13,7 @@ int main() {
 
     init_move_lookup_tables();
 
-    Board *board = from_fen("8/8/3k4/8/2P1R1n1/8/8/4K3 w - - 0 1");
+    Board *board = from_fen("8/8/4k3/8/2P1R1n1/8/8/4K3 b - - 0 1");
     print_board(board);
     legal_moves(board);
     /*Move mv = new_move(63, 55, 0b0000);

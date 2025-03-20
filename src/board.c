@@ -13,20 +13,21 @@ static U64 danger_squares(Board *board) {
     U64 friendly = board->colors[board->side_to_move];
     U64 enemy = board->colors[board->side_to_move ^ 1];
     U64 friendly_k = board->pieces[KING_IDX] & friendly;
-    U64 enemy_n = board->pieces[KNIGHT_IDX] & friendly;
-    U64 enemy_b = board->pieces[BISHOP_IDX] & friendly;
-    U64 enemy_r = board->pieces[ROOK_IDX] & friendly;
-    U64 enemy_q = board->pieces[QUEEN_IDX] & friendly;
-    U64 enemy_k = board->pieces[KING_IDX] & friendly;
+    U64 enemy_n = board->pieces[KNIGHT_IDX] & enemy;
+    U64 enemy_b = board->pieces[BISHOP_IDX] & enemy;
+    U64 enemy_r = board->pieces[ROOK_IDX] & enemy;
+    U64 enemy_q = board->pieces[QUEEN_IDX] & enemy;
+    U64 enemy_k = board->pieces[KING_IDX] & enemy;
+    U64 blockers = enemy | (friendly & ~friendly_k);
     U64 danger_squares = 0ULL;
     while(enemy_n)
         danger_squares |= n_moves(pop_lsb(&enemy_n));
     while(enemy_b)
-        danger_squares |= b_moves(pop_lsb(&enemy_b), enemy | (friendly & !friendly_k)) & ~friendly;
+        danger_squares |= b_moves(pop_lsb(&enemy_b), blockers) & ~enemy;
     while(enemy_r)
-        danger_squares |= r_moves(pop_lsb(&enemy_r), enemy | (friendly & !friendly_k)) & ~friendly;
+        danger_squares |= r_moves(pop_lsb(&enemy_r), blockers) & ~enemy;
     while(enemy_q)
-        danger_squares |= q_moves(pop_lsb(&enemy_q), enemy | (friendly & !friendly_k)) & ~friendly;
+        danger_squares |= q_moves(pop_lsb(&enemy_q), blockers) & ~enemy;
     while(enemy_k)
         danger_squares |= k_moves(pop_lsb(&enemy_k));
 
