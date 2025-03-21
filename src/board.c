@@ -113,16 +113,17 @@ static U64 get_pins(Board *board, bool color) {
             }
         }    
     }
-    
 
-
-print_bb(pins);
     return pins;
 }
 
 static inline U64 ep_target(Board *board) {
     StateFlags state = board->state_stack[board->ply];
     return state & 0x04000000 ? 1ULL << ((state >> 20) & 0x3f) : 0ULL;
+}
+
+static inline bool can_castle(Board *board, bool color, bool side) {
+    return TEST_BIT(board->state_stack[board->ply], 27 + (side^1) + (color^1)*2);
 }
 
 void make_move(Board *board, Move move) {
@@ -322,7 +323,7 @@ void unmake_move(Board *board, Move move) {
 }
 
 Move* legal_moves(Board *board) {
-    Move *buff = malloc(MAX_NUM_LEGAL_MOVES); // TODO better
+    Move *buff = malloc(MAX_NUM_LEGAL_MOVES * sizeof(Move)); // TODO better
     U64 aux1, aux2, aux3, aux4;
     Sq from;
     Move move;
@@ -352,7 +353,14 @@ Move* legal_moves(Board *board) {
         capture_mask = checkers;
         push_mask = ray_between(board->pieces[KING_IDX] & friendly, checkers);
     } else {
-        // TODO castle
+        aux1 = curr_side ? 0x6e00000000000000ULL : 0x000000000000006eULL; // castle masks
+        aux2 = 0x6000000000000060ULL & aux1;
+        if (can_castle(board, curr_side, 0) && !(aux2 & ds)) // short_castle
+            buff[i++] = MOVE_SHORT_CASTLE;
+
+        aux2 = 0x0c0000000000000cULL & aux1;
+        if (can_castle(board, curr_side, 1) && !(aux2 & ds)) // short_castle
+            buff[i++] = MOVE_LONG_CASTLE;
     }
 
     // pawn moves
@@ -360,8 +368,10 @@ Move* legal_moves(Board *board) {
     while (aux1) {
         aux2 = pop_lsb(&aux1);
         aux3 = (curr_side ? sout_one(aux2) : nort_one(aux2)) & ~(enemy | friendly) & push_mask;
-        //if (aux2 & pin) TODO
-            //aux3 &= 
+
+        if (aux2 & pins) // if pawn is pinned
+            aux3 &= r_moves(king, (friendly | enemy) & ~aux2);
+
         if (aux3 & (RANK_1 | RANK_8)) { // if pawn promotion
             for (j = 0; j < 4; j++) {
                 move = new_move(LOG2(aux2), LOG2(aux3), PROMOTE_N + j);
@@ -379,12 +389,16 @@ Move* legal_moves(Board *board) {
         U64 ep_targ = ep_target(board);
         aux4 = curr_side ? sout_one(aux2) : nort_one(aux2);
         aux3 = (east_one(aux4) | west_one(aux4)) & (enemy | ep_targ);
-        while (aux3) {
+        while (aux3 && !(aux2 & pins)) {
             aux4 = pop_lsb(&aux3);
-            if ((aux4 & push_mask) || ((curr_side ? nort_one(aux4) : sout_one(aux4)) & capture_mask)) {
-                if (aux4 & ep_targ) {
-                    move = new_move(LOG2(aux2), LOG2(aux4), EP_CAPTURE);
-                    buff[i++] = move;
+            U64 captured_ep_mask = curr_side ? nort_one(aux4) : sout_one(aux4);
+            if ((aux4 & push_mask) || (captured_ep_mask & capture_mask)) {
+                if (aux4 & ep_targ) { // ep capture
+                    U64 ep_discover_mask = (friendly | enemy) & ~(captured_ep_mask | aux2);
+                    if (!(r_moves(king, ep_discover_mask) & enemy & (board->pieces[QUEEN_IDX] | board->pieces[ROOK_IDX]))) { // if not ep discovered check
+                        move = new_move(LOG2(aux2), LOG2(aux4), EP_CAPTURE);
+                        buff[i++] = move;
+                    }
                 } else if (aux4 & (RANK_1 | RANK_8)) {
                     for (j = 0; j < 4; j++) {
                         move = new_move(LOG2(aux2), LOG2(aux3), PROMOTE_CAPTURE_N + j);
@@ -467,9 +481,6 @@ end:
     return buff;
 }
 
-bool can_castle(Board *board, bool color, bool side) {
-    return TEST_BIT(board->state_stack[board->ply], 27 + (side^1) + (color^1)*2);
-}
 
 int half_moves(Board *board) {
     return board->state_stack[board->ply] & HALF_MOVE_MASK;
@@ -555,11 +566,13 @@ Board* from_fen(char* fen) {
     } else {
         i++; 
     }
-
     i++; 
 
-    for (; fen[i] != ' '; i++); // TODO en passant
-    i++;
+    if (fen[i] != '-') // set ep square
+        board->state_stack[board->ply] |= (sq_from_str(fen + i++) << 20) | (1 << 26);
+
+    i += 2;
+
     for (; fen[i] != ' '; i++); // TODO half-move clock
     i++;
     for (; fen[i] != ' '; i++); // TODO full-move num

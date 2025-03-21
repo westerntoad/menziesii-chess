@@ -29,13 +29,16 @@
 #define RANK_7 0x00ff000000000000ULL
 #define RANK_8 0xff00000000000000ULL
 
-#define DOUBLE_PUSH 0x1
-#define EP_CAPTURE 0x5
-#define PROMOTE_N 0x8
-#define PROMOTE_N 0x8
-#define PROMOTE_B 0x9
-#define PROMOTE_R 0xa
-#define PROMOTE_Q 0xb
+#define MOVE_SHORT_CASTLE 0x2000
+#define MOVE_LONG_CASTLE  0x3000
+
+#define DOUBLE_PUSH       0x1
+#define EP_CAPTURE        0x5
+#define PROMOTE_N         0x8
+#define PROMOTE_N         0x8
+#define PROMOTE_B         0x9
+#define PROMOTE_R         0xa
+#define PROMOTE_Q         0xb
 #define PROMOTE_CAPTURE_N 0xc
 #define PROMOTE_CAPTURE_B 0xd
 #define PROMOTE_CAPTURE_R 0xe
@@ -109,6 +112,7 @@ void print_sq(Sq sq);
 Move new_move(Sq from, Sq to, MoveFlags flags);
 Sq get_from(Move move);
 Sq get_to(Move move);
+Sq sq_from_str(char *s);
 bool is_promotion(Move move);
 void print_move(Move move);
 

@@ -5,6 +5,10 @@ void print_sq(Sq sq) {
     wprintf(L"%c%d", 0x61 + (sq%8), sq/8 + 1);
 }
 
+Sq sq_from_str(char *s) {
+    return s[0] - 0x61 + (s[1] - 0x31)*8;
+}
+
 Move new_move(Sq from, Sq to, MoveFlags flags) {
     return (flags<<12) | (from<<6) | to;
 }

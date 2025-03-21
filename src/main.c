@@ -15,7 +15,7 @@ int main() {
 
     //Board *board = from_fen("8/8/4k3/8/2P1R1n1/8/8/4K3 b - - 0 1");
     //Board *board = from_fen("8/4N3/2k3R1/1P6/2K5/8/8/7B b - - 0 1");
-    Board *board = from_fen("K7/8/8/8/8/R3p2k/8/8 b - - 0 1");
+    Board *board = from_fen("r3k2r/8/8/6B1/8/8/8/4K3 b kq - 0 1");
     print_board(board);
     /*Move mv = new_move(d2, d4, 0b0001);
     make_move(board, mv);
@@ -42,5 +42,5 @@ int main() {
         print_bb(moves);
     }*/
     
-    //wprintf(L"\n\n%x\n\n", 1<<15);
+    //wprintf(L"\n\n%x\n\n", 3<<12);
 }
