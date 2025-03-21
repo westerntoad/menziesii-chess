@@ -14,12 +14,9 @@ int main() {
     init_move_lookup_tables();
 
     //Board *board = from_fen("8/8/4k3/8/2P1R1n1/8/8/4K3 b - - 0 1");
-    Board *board = from_fen("8/4N3/2k3R1/1P6/2K5/8/8/7B b - - 0 1");
-    print_board(board);
-    Move *moves = legal_moves(board);
-    print_move_buffer(moves);
-    /*Board *board = from_fen("8/5P2/2k5/8/2K5/8/8/8 w - - 0 1");
-    Move mv = new_move(53, 61, 0b1000);
+    //Board *board = from_fen("8/4N3/2k3R1/1P6/2K5/8/8/7B b - - 0 1");
+    Board *board = from_fen("8/2k2p2/8/6P1/8/8/2K5/8 b - - 0 1");
+    Move mv = new_move(53, 37, 0b0001);
     print_board(board);
     make_move(board, mv);
     wprintf(L"\nAFTER MAKE_MOVE ");
@@ -31,7 +28,7 @@ int main() {
     print_move(mv);
     wprintf(L"\n");
     print_board(board);
-    wprintf(L"\n\n\n");*/
+    wprintf(L"\n\n\n");
     
     //wprintf(L"\n\n%x\n\n", ~((Move) 1<<27));
 
