@@ -25,5 +25,6 @@
 #define TEST_BIT(x,pos) ((x) & (1<<(pos)))
 #define SET_BIT(x,pos) ((x) | (1<<(pos)))
 #define LOG2(x) __builtin_ctzll(x)
+#define POP_COUNT(x) __builtin_popcountll(x)
 
 #endif  // UTILS_H

@@ -39,7 +39,47 @@ static U64 danger_squares(Board *board) {
         danger_squares |= k_moves(pop_lsb(&enemy_k));
 
     return danger_squares;
+}
 
+static U64 get_checkers(Board *board, bool color) {
+    U64 friendly = board->colors[color];
+    U64 enemy = board->colors[color^1];
+    U64 checkers = 0ULL;
+    U64 king = board->pieces[KING_IDX] & friendly;
+    U64 aux;
+
+    aux = east_one(king) | west_one(king);
+    aux = color ? sout_one(aux) : nort_one(aux);
+    checkers |= aux & board->pieces[PAWN_IDX] & enemy;
+    checkers |= n_moves(king) & board->pieces[KNIGHT_IDX] & enemy;
+    aux = enemy | friendly;
+    checkers |= b_moves(king, aux) & (board->pieces[BISHOP_IDX] | board->pieces[QUEEN_IDX]) & enemy;
+    checkers |= r_moves(king, aux) & (board->pieces[ROOK_IDX  ] | board->pieces[QUEEN_IDX]) & enemy;
+
+    return checkers;
+}
+
+static U64 ray_between(U64 from, U64 to) {
+    const int dx[8] = { 0,  1,  0, -1,  1, -1,  1, -1 };
+    const int dy[8] = { 1,  0, -1,  0,  1,  1, -1, -1 };
+    U64 ray, aux;
+    int i;
+
+    for (i = 0; i < 8; i++) {
+        ray = 0;
+        aux = from;
+        while (aux) {
+            aux = delta_one(aux, dx[i], dy[i]);
+            if (aux & to)
+                return ray;
+
+            ray |= aux;
+        }
+//wprintf(L"\nray:\n");
+//print_bb(ray);
+    }
+
+    return 0;
 }
 
 void make_move(Board *board, Move move) {
@@ -248,8 +288,11 @@ Move* legal_moves(Board *board) {
     U64 friendly = board->colors[curr_side];
     U64 enemy = board->colors[curr_side ^ 1];
     U64 ds = danger_squares(board);
+    U64 checkers = get_checkers(board, curr_side);
+    U64 capture_mask = -1;
+    U64 push_mask = -1;
 
-
+    // king moves
     aux1 = board->pieces[KING_IDX] & friendly;
     from = LOG2(aux1);
     aux2 = k_moves(aux1) & ~ds & ~friendly;
@@ -258,9 +301,18 @@ Move* legal_moves(Board *board) {
         move = new_move(from, LOG2(aux1), aux1 & enemy ? 4 : 0);
         buff[i++] = move;
     }
-    
-    buff[i++] = 0;
 
+    if (POP_COUNT(checkers) > 1) { // double check or more
+        goto end; // no other pieces can move
+    } else if (checkers) { // single check, create capture & push mask
+        capture_mask = checkers;
+        push_mask = ray_between(board->pieces[KING_IDX] & friendly, checkers);
+    }
+
+
+    
+end:
+    buff[i++] = 0;
     return buff;
 }
 
