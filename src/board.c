@@ -81,8 +81,8 @@ static U64 ray_between(U64 from, U64 to) {
 }
 
 static U64 get_pins(Board *board, bool color) {
-    const int dx[8] = { 0,  1,  0, -1,  1, -1,  1, -1 };
-    const int dy[8] = { 1,  0, -1,  0,  1,  1, -1, -1 };
+    const int dx[8] = { 1, -1,  1, -1,  0,  1,  0, -1 };
+    const int dy[8] = { 1,  1, -1, -1,  1,  0, -1,  0 };
     U64 friendly = board->colors[color];
     U64 enemy = board->colors[color^1];
     U64 king = board->pieces[KING_IDX] & friendly;
@@ -90,28 +90,30 @@ static U64 get_pins(Board *board, bool color) {
     U64 enem = 0ULL;
     U64 opp = 0ULL;
     U64 pins = 0ULL;
-    int i;
+    int i, j;
 
-    // rooks
-    aux1 = (board->pieces[ROOK_IDX] | board->pieces[QUEEN_IDX]) & enemy;
-    while (aux1) {
-        aux2 = pop_lsb(&aux1);
-        for (i = 0; i < 4; i++) {
-            aux3 = aux2;
-            do {
-                aux3 = delta_one(aux3, dx[i], dy[i]);
-                enem |= aux3;
-            } while (aux3 & ~friendly & ~enemy);
+    for (i = 0; i < 2; i++) {
+        aux1 = (board->pieces[BISHOP_IDX + i] | board->pieces[QUEEN_IDX]) & enemy;
+        while (aux1) {
+            aux2 = pop_lsb(&aux1);
+            for (j = i*4; j < (i+1)*4; j++) {
+                aux3 = aux2;
+                do {
+                    aux3 = delta_one(aux3, dx[j], dy[j]);
+                    enem |= aux3;
+                } while (aux3 & ~friendly & ~enemy);
 
-            aux3 = king;
-            do {
-                aux3 = delta_one(aux3, -dx[i], -dy[i]);
-                opp |= aux3;
-            } while (aux3 & ~friendly & ~enemy);
+                aux3 = king;
+                do {
+                    aux3 = delta_one(aux3, -dx[j], -dy[j]);
+                    opp |= aux3;
+                } while (aux3 & ~friendly & ~enemy);
 
-            pins |= opp & enem & friendly;
-        }
+                pins |= opp & enem & friendly;
+            }
+        }    
     }
+    
 
 
 print_bb(pins);
@@ -328,6 +330,7 @@ Move* legal_moves(Board *board) {
     bool curr_side = board->side_to_move;
     U64 friendly = board->colors[curr_side];
     U64 enemy = board->colors[curr_side ^ 1];
+    U64 king = board->pieces[KING_IDX] & friendly;
     U64 ds = danger_squares(board);
     U64 checkers = get_checkers(board, curr_side);
     U64 pins = get_pins(board, curr_side);
@@ -335,9 +338,8 @@ Move* legal_moves(Board *board) {
     U64 push_mask = -1;
 
     // king moves
-    aux1 = board->pieces[KING_IDX] & friendly;
-    from = LOG2(aux1);
-    aux2 = k_moves(aux1) & ~ds & ~friendly;
+    from = LOG2(king);
+    aux2 = k_moves(king) & ~ds & ~friendly;
     while (aux2) {
         aux1 = pop_lsb(&aux2);
         move = new_move(from, LOG2(aux1), aux1 & enemy ? 4 : 0);
@@ -349,6 +351,8 @@ Move* legal_moves(Board *board) {
     } else if (checkers) { // single check, create capture & push mask
         capture_mask = checkers;
         push_mask = ray_between(board->pieces[KING_IDX] & friendly, checkers);
+    } else {
+        // TODO castle
     }
 
     // pawn moves
@@ -356,6 +360,8 @@ Move* legal_moves(Board *board) {
     while (aux1) {
         aux2 = pop_lsb(&aux1);
         aux3 = (curr_side ? sout_one(aux2) : nort_one(aux2)) & ~(enemy | friendly) & push_mask;
+        //if (aux2 & pin) TODO
+            //aux3 &= 
         if (aux3 & (RANK_1 | RANK_8)) { // if pawn promotion
             for (j = 0; j < 4; j++) {
                 move = new_move(LOG2(aux2), LOG2(aux3), PROMOTE_N + j);
@@ -408,6 +414,10 @@ Move* legal_moves(Board *board) {
     while (aux1) {
         aux2 = pop_lsb(&aux1);
         aux3 = b_moves(aux2, friendly | enemy) & ~friendly;
+
+        if (aux2 & pins)
+            aux3 &= b_moves(king, (friendly | enemy) & ~aux2);
+
         while (aux3) {
             aux4 = pop_lsb(&aux3);
             if ((aux4 & push_mask) || (aux4 & capture_mask))
@@ -419,6 +429,10 @@ Move* legal_moves(Board *board) {
     while (aux1) {
         aux2 = pop_lsb(&aux1);
         aux3 = r_moves(aux2, friendly | enemy) & ~friendly;
+
+        if (aux2 & pins)
+            aux3 &= r_moves(king, (friendly | enemy) & ~aux2);
+
         while (aux3) {
             aux4 = pop_lsb(&aux3);
             if ((aux4 & push_mask) || (aux4 & capture_mask))
@@ -430,6 +444,17 @@ Move* legal_moves(Board *board) {
     while (aux1) {
         aux2 = pop_lsb(&aux1);
         aux3 = q_moves(aux2, friendly | enemy) & ~friendly;
+
+        if (aux2 & pins) {
+            aux4 = r_moves(king, (friendly | enemy) & ~aux2);
+            if (aux4 & (board->pieces[ROOK_IDX] | board->pieces[QUEEN_IDX]) & enemy) {
+                aux3 = aux4 & r_moves(aux2, friendly | enemy) & ~friendly;
+            } else {
+                aux4 = b_moves(king, (friendly | enemy) & ~aux2);
+                aux3 &= aux4 & b_moves(aux2, friendly | enemy) & ~friendly;
+            }
+        }
+
         while (aux3) {
             aux4 = pop_lsb(&aux3);
             if ((aux4 & push_mask) || (aux4 & capture_mask))
