@@ -6,7 +6,7 @@
 #include "movegen.h"
 #include "utils.h" // includes <stdio.h>
 
-#define INITIAL_MOVE_CAPACITY 220
+#define INITIAL_MOVE_CAPACITY 500
 #define HALF_MOVE_MASK 0x1ffff
 
 static U64 danger_squares(Board *board) {
@@ -137,7 +137,7 @@ void make_move(Board *board, Move move) {
     U64 to = 1ULL << get_to(move);
     U64 aux1, aux2;
     bool curr_color = board->side_to_move;
-    StateFlags next_state = board->state_stack[board->ply] + 1;
+    StateFlags next_state = board->state_stack[board->ply];
     int i, j;
 
     board->ply++;
@@ -409,7 +409,7 @@ MoveList* legal_moves(Board *board) {
                     }
                 } else if (aux4 & (RANK_1 | RANK_8)) {
                     for (j = 0; j < 4; j++) {
-                        move = new_move(LOG2(aux2), LOG2(aux3), PROMOTE_CAPTURE_N + j);
+                        move = new_move(LOG2(aux2), LOG2(aux4), PROMOTE_CAPTURE_N + j);
                         push_move(list, move);
                     }
                 } else {
@@ -497,7 +497,9 @@ Move move_from_str(Board *board, char* str) {
     to = sq_from_str(str);
     from_bb = 1ULL << from;
     to_bb = 1ULL << to;
-    
+/*print_bb(from_bb);
+printf("\n");
+print_bb(to_bb);*/
     
     if ((1ULL << from) & (e1 | e8) & board->pieces[KING_IDX]) { // castling
         if (from == e1) {
@@ -542,6 +544,11 @@ static U64 perft_helper(Board *board, int depth) {
     Move curr_move = pop_move(list);
     U64 nodes = 0;
 
+    /*if (depth == 1) {
+        nodes = list->size;
+        curr_move = 0;
+    }*/
+
     while (curr_move) {
         make_move(board, curr_move);
         nodes += perft_helper(board, depth-1);
@@ -561,12 +568,19 @@ void print_perft(Board *board, int depth) {
     U64 curr_node = 0;
     
     while (curr_move) {
+//print_move(curr_move);
+//printf("\n");
         make_move(board, curr_move);
+//printf("3: %x\n", *board->state_stack);
         print_move(curr_move);
+        printf(": ");
+//printf("4: %p\n", *board->state_stack);
         curr_node = perft_helper(board, depth-1);
-        printf(": %lu\n", curr_node);
+        printf("%lu\n", curr_node);
         total_nodes += curr_node;
+//printf("1: %p\n", board->state_stack);
         unmake_move(board, curr_move);
+//printf("2: %x\n", *board->state_stack);
 
         curr_move = pop_move(list);
     }
@@ -580,7 +594,7 @@ Board* from_fen(char* fen) {
     Board *board = (Board*)malloc(sizeof(Board));
     memset(board, 0, sizeof(Board));
     board->stack_capacity = INITIAL_MOVE_CAPACITY;
-    board->state_stack = (StateFlags *)calloc(board->stack_capacity, sizeof(StateFlags));
+    board->state_stack = (StateFlags *)malloc(board->stack_capacity * sizeof(StateFlags));
     board->state_stack[0] = 1 << 31;
     U64 bb;
     int i, j, color_idx = 0, piece_idx = 0;
@@ -625,7 +639,7 @@ Board* from_fen(char* fen) {
             board->pieces[piece_idx] |= bb;
         }
     }
-    debug_assert(j == 63, "FEN translation for piece placement must equal 64");
+    //debug_assert(j == 63, "FEN translation for piece placement must equal 64");
 
     i++;
 

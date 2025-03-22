@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "uci.h"
-//#include "board.h"
+#include "board.h"
 #include "movegen.h"
 #include "utils.h" // includes <stdio.h>
 
@@ -22,9 +22,12 @@ int main(void) {
     }
     init_move_lookup_tables();
 
-    /*MoveList *list = new_movelist();
-    push_move(list, new_move(e2, e4, 0));
-    print_movelist(list);
+
+    /*Board *board = from_fen("4nn2/5P2/8/8/8/8/8/k6K w - - 0 1");
+    //Move move = new_move(f7, e8, PROMOTE_CAPTURE_Q);
+    Move move = move_from_str(board, "f7a1q");
+    make_move(board, move);
+    print_board(board);
     return 0;*/
 
     while (1) {

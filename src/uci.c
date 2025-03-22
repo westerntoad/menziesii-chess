@@ -132,7 +132,7 @@ int uci(void) {
                 go(&str);
                 break;
             } else if (has(&str, "quit")) {
-                free(str);
+                //free(str); // TODO fix
                 if (G_BOARD)
                     free_board(G_BOARD);
 
