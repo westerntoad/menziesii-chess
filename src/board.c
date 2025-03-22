@@ -87,8 +87,8 @@ static U64 get_pins(Board *board, bool color) {
     U64 enemy = board->colors[color^1];
     U64 king = board->pieces[KING_IDX] & friendly;
     U64 aux1, aux2, aux3;
-    U64 enem = 0ULL;
-    U64 opp = 0ULL;
+    U64 enem;
+    U64 opp;
     U64 pins = 0ULL;
     int i, j;
 
@@ -97,6 +97,8 @@ static U64 get_pins(Board *board, bool color) {
         while (aux1) {
             aux2 = pop_lsb(&aux1);
             for (j = i*4; j < (i+1)*4; j++) {
+                enem = 0ULL;
+                opp = 0ULL;
                 aux3 = aux2;
                 do {
                     aux3 = delta_one(aux3, dx[j], dy[j]);
