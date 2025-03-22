@@ -108,6 +108,15 @@ void print_bb(U64 bb) {
     int i, j;
     for (i = 7; i >= 0; i--) {
         for (j = 0; j < 8; j++)
+            printf("%d ", ((bb >> (j+i*8)) & 1ULL));
+        printf("\n");
+    }
+}
+
+void wprint_bb(U64 bb) {
+    int i, j;
+    for (i = 7; i >= 0; i--) {
+        for (j = 0; j < 8; j++)
             wprintf(L"%lc ", ((bb >> (j+i*8)) & 1ULL) ? 0x2715 : 0x00b7);
         wprintf(L"\n");
     }

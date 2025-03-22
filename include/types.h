@@ -123,5 +123,6 @@ U64 sout_one(U64 bb);
 U64 west_one(U64 bb);
 U64 delta_one(U64 bb, int dx, int dy);
 void print_bb(U64 bb);
+void wprint_bb(U64 bb);
 
 #endif  // TYPES_H

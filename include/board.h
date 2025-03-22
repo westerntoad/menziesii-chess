@@ -20,7 +20,8 @@ void unmake_move(Board *board, Move move);
 Move* legal_moves(Board *board);
 int half_moves(Board *board);
 void print_board(Board *board);
-void print_move_buffer(Move *buffer);
+void wprint_board(Board *board);
+void wprint_move_buffer(Move *buffer);
 Board* from_fen(char* fen);
 
 #endif  // BOARD_H

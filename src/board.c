@@ -573,14 +573,63 @@ Board* from_fen(char* fen) {
 
     i += 2;
 
-    for (; fen[i] != ' '; i++); // TODO half-move clock
+    /*for (; fen[i] != ' '; i++); // TODO half-move clock
     i++;
-    for (; fen[i] != ' '; i++); // TODO full-move num
+    for (; fen[i] != ' '; i++); // TODO full-move num*/
 
     return board;
 }
 
 void print_board(Board *board) {
+    StateFlags state = board->state_stack[board->ply];
+    char castle_rights[5];
+    int i;
+
+    printf("WHITE\n");
+    print_bb(board->colors[WHITE]);
+    printf("\nBLACK\n");
+    print_bb(board->colors[BLACK]);
+
+    printf("\n\nPAWNS\n");
+    print_bb(board->pieces[PAWN_IDX]);
+    printf("\nKNIGHTS\n");
+    print_bb(board->pieces[KNIGHT_IDX]);
+    printf("\nBISHOPS\n");
+    print_bb(board->pieces[BISHOP_IDX]);
+    printf("\nROOKS\n");
+    print_bb(board->pieces[ROOK_IDX]);
+    printf("\nQUEENS\n");
+    print_bb(board->pieces[QUEEN_IDX]);
+    printf("\nKINGS\n");
+    print_bb(board->pieces[KING_IDX]);
+    
+    i = 0;
+    if (can_castle(board, WHITE, KINGSIDE)) {
+        castle_rights[i] = 'K';
+        i++;
+    }
+    if (can_castle(board, WHITE, QUEENSIDE)) {
+        castle_rights[i] = 'Q';
+        i++;
+    }
+    if (can_castle(board, BLACK, KINGSIDE)) {
+        castle_rights[i] = 'k';
+        i++;
+    }
+    if (can_castle(board, BLACK, QUEENSIDE)) {
+        castle_rights[i] = 'q';
+        i++;
+    }
+    if (i == 0) {
+        castle_rights[i] = '-';
+        i++;
+    }
+    castle_rights[i] = '\0';
+
+    printf("CASTLING RIGHTS: %-4s\n",castle_rights);
+}
+
+void wprint_board(Board *board) {
     StateFlags state = board->state_stack[board->ply];
     U64 bb;
     int i, j, k, c, color, piece;
@@ -641,14 +690,16 @@ void print_board(Board *board) {
     }
     wprintf(L"\n");
     Move *moves = legal_moves(board);
-    print_move_buffer(moves);
+    wprint_move_buffer(moves);
     wprintf(L"\n");
 }
 
-void print_move_buffer(Move *buffer) {
+void wprint_move_buffer(Move *buffer) {
     for (; *buffer; buffer++) {
         wprintf(L"\n");
         print_move(*buffer);
     }
     wprintf(L"\n");
 }
+
+
