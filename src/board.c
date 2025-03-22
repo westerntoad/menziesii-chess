@@ -6,7 +6,7 @@
 #include "movegen.h"
 #include "utils.h" // includes <stdio.h>
 
-#define INITIAL_MOVE_CAPACITY 100
+#define INITIAL_MOVE_CAPACITY 220
 #define HALF_MOVE_MASK 0x1ffff
 
 static U64 danger_squares(Board *board) {
@@ -329,12 +329,12 @@ void unmake_move(Board *board, Move move) {
     board->colors[curr_color] |= from;
 }
 
-Move* legal_moves(Board *board) {
-    Move *buff = malloc(MAX_NUM_LEGAL_MOVES * sizeof(Move)); // TODO better
+MoveList* legal_moves(Board *board) {
+    MoveList *list = new_movelist();
     U64 aux1, aux2, aux3, aux4;
     Sq from;
     Move move;
-    int i = 0, j;
+    int j;
     bool curr_side = board->side_to_move;
     U64 friendly = board->colors[curr_side];
     U64 enemy = board->colors[curr_side ^ 1];
@@ -351,7 +351,7 @@ Move* legal_moves(Board *board) {
     while (aux2) {
         aux1 = pop_lsb(&aux2);
         move = new_move(from, LOG2(aux1), aux1 & enemy ? 4 : 0);
-        buff[i++] = move;
+        push_move(list, move);
     }
 
     if (POP_COUNT(checkers) > 1) { // double check or more
@@ -363,11 +363,11 @@ Move* legal_moves(Board *board) {
         aux1 = curr_side ? 0x6e00000000000000ULL : 0x000000000000006eULL; // castle masks
         aux2 = 0x6000000000000060ULL & aux1;
         if (can_castle(board, curr_side, 0) && !(aux2 & (ds | friendly | enemy))) // short_castle
-            buff[i++] = curr_side ? MOVE_B_SHORT_CASTLE : MOVE_W_SHORT_CASTLE;
+            push_move(list, curr_side ? MOVE_B_SHORT_CASTLE : MOVE_W_SHORT_CASTLE);
 
         aux2 = 0x0c0000000000000cULL & aux1;
         if (can_castle(board, curr_side, 1) && !(aux2 & (ds | friendly | enemy))) // short_castle
-            buff[i++] = curr_side ? MOVE_B_LONG_CASTLE : MOVE_W_LONG_CASTLE;
+            push_move(list, curr_side ? MOVE_B_LONG_CASTLE : MOVE_B_LONG_CASTLE);
     }
 
     // pawn moves
@@ -382,16 +382,16 @@ Move* legal_moves(Board *board) {
         if (aux3 & (RANK_1 | RANK_8) & push_mask) { // if pawn promotion
             for (j = 0; j < 4; j++) {
                 move = new_move(LOG2(aux2), LOG2(aux3), PROMOTE_N + j);
-                buff[i++] = move;
+                push_move(list, move);
             }
         } else if (aux3) { // single push
             if (aux3 & push_mask)
-                buff[i++] = new_move(LOG2(aux2), LOG2(aux3), 0);
+                push_move(list, new_move(LOG2(aux2), LOG2(aux3), 0));
 
             aux4 = (curr_side ? sout_one(aux3) : nort_one(aux3)) & ~(enemy | friendly) & push_mask;
             if (aux4 & (curr_side ? RANK_5 : RANK_4)) { // double push
                 move = new_move(LOG2(aux2), LOG2(aux4), DOUBLE_PUSH);
-                buff[i++] = move;
+                push_move(list, move);
             }
         }
         U64 ep_targ = ep_target(board);
@@ -405,16 +405,16 @@ Move* legal_moves(Board *board) {
                     U64 ep_discover_mask = (friendly | enemy) & ~(captured_ep_mask | aux2);
                     if (!(r_moves(king, ep_discover_mask) & enemy & (board->pieces[QUEEN_IDX] | board->pieces[ROOK_IDX]))) { // if not ep discovered check
                         move = new_move(LOG2(aux2), LOG2(aux4), EP_CAPTURE);
-                        buff[i++] = move;
+                        push_move(list, move);
                     }
                 } else if (aux4 & (RANK_1 | RANK_8)) {
                     for (j = 0; j < 4; j++) {
                         move = new_move(LOG2(aux2), LOG2(aux3), PROMOTE_CAPTURE_N + j);
-                        buff[i++] = move;
+                        push_move(list, move);
                     }
                 } else {
                     move = new_move(LOG2(aux2), LOG2(aux4), 4);
-                    buff[i++] = move;
+                    push_move(list, move);
                 }
             }
         }
@@ -428,7 +428,7 @@ Move* legal_moves(Board *board) {
         while (aux3 && !(aux2 & pins)) {
             aux4 = pop_lsb(&aux3);
             if ((aux4 & push_mask) || (aux4 & capture_mask))
-                buff[i++] = new_move(LOG2(aux2), LOG2(aux4), aux4 & enemy ? 4 : 0);
+                push_move(list, new_move(LOG2(aux2), LOG2(aux4), aux4 & enemy ? 4 : 0));
         }
     }
     
@@ -443,7 +443,7 @@ Move* legal_moves(Board *board) {
         while (aux3) {
             aux4 = pop_lsb(&aux3);
             if ((aux4 & push_mask) || (aux4 & capture_mask))
-                buff[i++] = new_move(LOG2(aux2), LOG2(aux4), aux4 & enemy ? 4 : 0);
+                push_move(list, new_move(LOG2(aux2), LOG2(aux4), aux4 & enemy ? 4 : 0));
         }
     }
     
@@ -458,7 +458,7 @@ Move* legal_moves(Board *board) {
         while (aux3) {
             aux4 = pop_lsb(&aux3);
             if ((aux4 & push_mask) || (aux4 & capture_mask))
-                buff[i++] = new_move(LOG2(aux2), LOG2(aux4), aux4 & enemy ? 4 : 0);
+                push_move(list, new_move(LOG2(aux2), LOG2(aux4), aux4 & enemy ? 4 : 0));
         }
     }
     
@@ -480,13 +480,12 @@ Move* legal_moves(Board *board) {
         while (aux3) {
             aux4 = pop_lsb(&aux3);
             if ((aux4 & push_mask) || (aux4 & capture_mask))
-                buff[i++] = new_move(LOG2(aux2), LOG2(aux4), aux4 & enemy ? 4 : 0);
+                push_move(list, new_move(LOG2(aux2), LOG2(aux4), aux4 & enemy ? 4 : 0));
         }
     }
     
 end:
-    buff[i++] = 0;
-    return buff;
+    return list;
 }
 
 Move move_from_str(Board *board, char* str) {
@@ -539,41 +538,41 @@ static U64 perft_helper(Board *board, int depth) {
     if (depth == 0)
         return 1;
 
-    Move* moves = legal_moves(board);
-    Move* curr_move = moves;
+    MoveList* list = legal_moves(board);
+    Move curr_move = pop_move(list);
     U64 nodes = 0;
 
-    while (*curr_move) {
-        make_move(board, *curr_move);
+    while (curr_move) {
+        make_move(board, curr_move);
         nodes += perft_helper(board, depth-1);
-        unmake_move(board, *curr_move);
+        unmake_move(board, curr_move);
 
-        curr_move++;
+        curr_move = pop_move(list);
     }
     
-    free(moves);
+    free_movelist(list);
     return nodes;
 }
 
 void print_perft(Board *board, int depth) {
-    Move* moves = legal_moves(board);
-    Move* curr_move = moves;
+    MoveList* list = legal_moves(board);
+    Move curr_move = pop_move(list);
     U64 total_nodes = 0;
     U64 curr_node = 0;
     
-    while (*curr_move) {
-        make_move(board, *curr_move);
-        print_move(*curr_move);
+    while (curr_move) {
+        make_move(board, curr_move);
+        print_move(curr_move);
         curr_node = perft_helper(board, depth-1);
         printf(": %lu\n", curr_node);
         total_nodes += curr_node;
-        unmake_move(board, *curr_move);
+        unmake_move(board, curr_move);
 
-        curr_move++;
+        curr_move = pop_move(list);
     }
     printf("\nTotal nodes: %lu\n", total_nodes);
 
-    free(moves);
+    free_movelist(list);
 }
 
 
@@ -669,6 +668,11 @@ Board* from_fen(char* fen) {
     for (; fen[i] != ' '; i++); // TODO full-move num*/
 
     return board;
+}
+
+void free_board(Board *board) {
+    free(board->state_stack);
+    free(board);
 }
 
 void print_board_bb(Board *board) {
@@ -838,12 +842,12 @@ void wprint_board(Board *board) {
         wprintf(L" -");
     }
     wprintf(L"\n");
-    Move *moves = legal_moves(board);
+    /*Move *moves = legal_moves(board);
     wprint_move_buffer(moves);
-    wprintf(L"\n");
+    wprintf(L"\n");*/
 }
 
-void print_move_buffer(Move *buffer) {
+/*void print_move_buffer(Move *buffer) {
     for (; *buffer; buffer++) {
         printf("\n");
         print_move(*buffer);
@@ -858,6 +862,4 @@ void wprint_move_buffer(Move *buffer) {
         wprint_move(*buffer);
     }
     wprintf(L"\n");
-}
-
-
+}*/

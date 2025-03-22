@@ -62,6 +62,9 @@ static void position(char** input) {
     int i;
     int state = 0;
 
+    if (G_BOARD)
+        free_board(G_BOARD);
+
     while (**input != '\n') {
         if (has(input, "startpos") && state == 0) {
             G_BOARD = from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -82,7 +85,6 @@ static void position(char** input) {
 
             state = 1;
         } else if (has(input, "moves") && state == 1) {
-            //printf("\n\nTHING\n\n");
             state = 2;
         } else if (state == 2) {
             move = move_from_str(G_BOARD, next_token(input));
@@ -98,7 +100,9 @@ static void go(char** input) {
 
     while (**input != '\n') {
         if (has(input, "perft")) {
-            print_perft(G_BOARD, atoi(next_token(input)));
+            if (G_BOARD)
+                print_perft(G_BOARD, atoi(next_token(input)));
+
             break;
         } else {
             consume_token(input);
@@ -128,6 +132,10 @@ int uci(void) {
                 go(&str);
                 break;
             } else if (has(&str, "quit")) {
+                free(str);
+                if (G_BOARD)
+                    free_board(G_BOARD);
+
                 return 0;
             } else if (has(&str, "d")) {
                 if (G_BOARD)

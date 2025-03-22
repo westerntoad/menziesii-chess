@@ -1,6 +1,8 @@
 #include "types.h"
 #include "utils.h" // includes <stdio.h>
 
+#define INITIAL_MOVELIST_CAPACITY 25
+
 void print_sq(Sq sq) {
     printf("%c%d", 0x61 + (sq%8), sq/8 + 1);
 }
@@ -92,6 +94,65 @@ void wprint_move(Move move) {
                 wprintf(L"q");
                 break;
         }
+    }
+}
+
+MoveList *new_movelist() {
+    MoveList *list = (MoveList*)malloc(sizeof(MoveList));
+
+    if (list == NULL)
+        return NULL;
+
+    list->capacity = INITIAL_MOVELIST_CAPACITY;
+    list->size = 0;
+    list->data = (Move*)malloc(sizeof(Move) * list->capacity);
+    if (list->data == NULL) {
+        free(list);
+        return NULL;
+    }
+
+    return list;
+}
+
+void free_movelist(MoveList *list) {
+    free(list->data);
+    free(list);
+}
+
+int push_move(MoveList *list, Move move) {
+    if (list->size == list->capacity) {
+        list->capacity *= 2;
+        list->data = (Move*)realloc(list->data, sizeof(Move) * list->capacity);
+        if (list->data == NULL) {
+            free(list);
+            // TEMPORARY CODE
+            fprintf(stderr, "MOVE LIST RAN OUT OF SPACE\n");
+            exit(EXIT_FAILURE);
+            // TEMPORARY CODE
+
+            return 0;
+        }
+    }
+
+    list->data[list->size++] = move;
+
+    return 1;
+}
+
+Move pop_move(MoveList *list) {
+    if (list->size == 0) {
+        return 0;
+    }
+
+    return list->data[--list->size];
+}
+
+void print_movelist(MoveList *list) {
+    size_t i;
+
+    for (i = 0; i < list->size; i++) {
+        print_move(list->data[i]);
+        printf("\n");
     }
 }
 

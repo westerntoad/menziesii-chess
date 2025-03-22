@@ -2,6 +2,7 @@
 #define TYPES_H
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <stdbool.h>
 
 #define NUM_SQUARES 64
@@ -108,6 +109,17 @@ typedef uint_fast8_t MoveFlags;
  * 0000 0000 0000 0000 0000 0000 0000 0000 
  */
 typedef uint32_t StateFlags;
+typedef struct {
+    Move *data;
+    size_t size;
+    size_t capacity;
+} MoveList;
+
+MoveList *new_movelist();
+void free_movelist(MoveList *list);
+int push_move(MoveList *list, Move move);
+Move pop_move(MoveList *list);
+void print_movelist(MoveList *list);
 
 void print_sq(Sq sq);
 void wprint_sq(Sq sq);
