@@ -7,13 +7,33 @@
 
 #define IDENTIFY_STR "id name Menziesii\nid author Abraham Engebretson\n"
 
-#define MAX_STR_SIZE 64
+#define MAX_STR_SIZE 128
 
 typedef enum {
     INITIAL_STATE
 } UCIState;
 
 static Board *G_BOARD;
+
+static char* next_token(char** input) {
+    char* pt = *input;
+
+    while (!isspace(**input) && **input != '\n' && **input != '\0')
+        (*input)++;
+
+    if (**input == '\n') {
+        (**input) = '\0';
+        (*input)++;
+        (**input) = '\n';
+    } else {
+        (**input) = '\0';
+    }
+
+    while (**input == '\0' || (isspace(**input) && **input != '\n'))
+        (*input)++;
+
+    return pt;
+}
 
 // advances pointer to the next word delimitted by whitespace
 static void consume_token(char** input) {
@@ -37,12 +57,15 @@ static int has(char** input, char* word) {
 }
 
 static void position(char** input) {
+    Move move;
     char* pt;
     int i;
+    int state = 0;
 
     while (**input != '\n') {
-        if (has(input, "startpos")) {
+        if (has(input, "startpos") && state == 0) {
             G_BOARD = from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+            state = 1;
         } else if (has(input, "fen")) {
             pt = *input;
             for (i = 0; i < 6; i++) {
@@ -50,25 +73,37 @@ static void position(char** input) {
             }
             if (**input == '\n') {
                 **input = '\0';
-                printf("%s\n", pt);
-                printf("\n\n\n\n\nYEAH\n\n\n\n\n");
                 G_BOARD = from_fen(pt);
                 break;
             } else {
                 *((*input) - 1) = '\0';
                 G_BOARD = from_fen(pt);
             }
+
+            state = 1;
+        } else if (has(input, "moves") && state == 1) {
+            //printf("\n\nTHING\n\n");
+            state = 2;
+        } else if (state == 2) {
+            move = move_from_str(G_BOARD, next_token(input));
+            make_move(G_BOARD, move);
         } else {
             consume_token(input);
         }
     }
-
-    /*if (G_BOARD)
-        print_board(G_BOARD);*/
 }
 
 static void go(char** input) {
-    printf("%s", *input);
+    //char* pt;
+
+    while (**input != '\n') {
+        if (has(input, "perft")) {
+            print_perft(G_BOARD, atoi(next_token(input)));
+            break;
+        } else {
+            consume_token(input);
+        }
+    }
 }
 
 int uci(void) {
@@ -78,9 +113,11 @@ int uci(void) {
     printf(IDENTIFY_STR);
     printf("uciok\n");
     while (1) {
-        fgets(str, MAX_STR_SIZE, stdin);
+        if (fgets(str, MAX_STR_SIZE, stdin) == NULL) {
+            return -1;
+        }
 
-        while (*str != '\n') {
+        while (*str != '\n' && *str != '\0') {
             if (has(&str, "isready")) {
                 printf("readyok\n");
                 break;
@@ -90,7 +127,14 @@ int uci(void) {
             } else if (has(&str, "go")) {
                 go(&str);
                 break;
-            } else  {
+            } else if (has(&str, "quit")) {
+                return 0;
+            } else if (has(&str, "d")) {
+                if (G_BOARD)
+                    print_board(G_BOARD);
+
+                break;
+            } else {
                 consume_token(&str);
             }
         }

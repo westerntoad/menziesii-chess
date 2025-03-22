@@ -18,9 +18,12 @@ typedef struct {
 void make_move(Board *board, Move move);
 void unmake_move(Board *board, Move move);
 Move* legal_moves(Board *board);
-int half_moves(Board *board);
+Move move_from_str(Board *board, char* str);
+void print_perft(Board *board, int depth);
 void print_board(Board *board);
+void print_board_bb(Board *board);
 void wprint_board(Board *board);
+void print_move_buffer(Move *buffer);
 void wprint_move_buffer(Move *buffer);
 Board* from_fen(char* fen);
 

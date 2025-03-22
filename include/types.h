@@ -29,8 +29,10 @@
 #define RANK_7 0x00ff000000000000ULL
 #define RANK_8 0xff00000000000000ULL
 
-#define MOVE_SHORT_CASTLE 0x2000
-#define MOVE_LONG_CASTLE  0x3000
+#define MOVE_W_SHORT_CASTLE 0x2106
+#define MOVE_W_LONG_CASTLE  0x3102
+#define MOVE_B_SHORT_CASTLE 0x2f3e
+#define MOVE_B_LONG_CASTLE  0x3f3a
 
 #define DOUBLE_PUSH       0x1
 #define EP_CAPTURE        0x5
@@ -108,13 +110,15 @@ typedef uint_fast8_t MoveFlags;
 typedef uint32_t StateFlags;
 
 void print_sq(Sq sq);
+void wprint_sq(Sq sq);
+Sq sq_from_str(char *s);
 
 Move new_move(Sq from, Sq to, MoveFlags flags);
 Sq get_from(Move move);
 Sq get_to(Move move);
-Sq sq_from_str(char *s);
 bool is_promotion(Move move);
 void print_move(Move move);
+void wprint_move(Move move);
 
 U64 pop_lsb(U64 *bb);
 U64 nort_one(U64 bb);

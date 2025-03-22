@@ -126,6 +126,10 @@ static inline bool can_castle(Board *board, bool color, bool side) {
     return TEST_BIT(board->state_stack[board->ply], 27 + (side^1) + (color^1)*2);
 }
 
+static int half_moves(Board *board) {
+    return board->state_stack[board->ply] & HALF_MOVE_MASK;
+}
+
 void make_move(Board *board, Move move) {
     U64 from = 1ULL << get_from(move);
     U64 to = 1ULL << get_to(move);
@@ -300,6 +304,9 @@ void unmake_move(Board *board, Move move) {
         }
     }
 
+    board->pieces[i] &= ~to;
+    board->colors[curr_color] &= ~to;
+    
     if (move >> 12 == 5) { // check if ep capture
         aux1 = curr_color ? nort_one(to) : sout_one(to); // ep-captured pawn
         
@@ -312,8 +319,6 @@ void unmake_move(Board *board, Move move) {
         board->colors[curr_color ^ 1] |= to;
     }
 
-    board->pieces[i] &= ~to;
-    board->colors[curr_color] &= ~to;
 
     if (move & 0x8000) // check if promotion
         i = PAWN_IDX;
@@ -355,12 +360,12 @@ Move* legal_moves(Board *board) {
     } else {
         aux1 = curr_side ? 0x6e00000000000000ULL : 0x000000000000006eULL; // castle masks
         aux2 = 0x6000000000000060ULL & aux1;
-        if (can_castle(board, curr_side, 0) && !(aux2 & ds)) // short_castle
-            buff[i++] = MOVE_SHORT_CASTLE;
+        if (can_castle(board, curr_side, 0) && !(aux2 & (ds | friendly | enemy))) // short_castle
+            buff[i++] = curr_side ? MOVE_B_SHORT_CASTLE : MOVE_W_SHORT_CASTLE;
 
         aux2 = 0x0c0000000000000cULL & aux1;
-        if (can_castle(board, curr_side, 1) && !(aux2 & ds)) // short_castle
-            buff[i++] = MOVE_LONG_CASTLE;
+        if (can_castle(board, curr_side, 1) && !(aux2 & (ds | friendly | enemy))) // short_castle
+            buff[i++] = curr_side ? MOVE_B_LONG_CASTLE : MOVE_W_LONG_CASTLE;
     }
 
     // pawn moves
@@ -481,10 +486,93 @@ end:
     return buff;
 }
 
+Move move_from_str(Board *board, char* str) {
+    U64 from_bb, to_bb;
+    MoveFlags flags = 0;
+    char promote = str[4];
+    Sq to, from = sq_from_str(str);
+    str += 2;
+    to = sq_from_str(str);
+    from_bb = 1ULL << from;
+    to_bb = 1ULL << to;
+    
+    
+    if ((1ULL << from) & (e1 | e8) & board->pieces[KING_IDX]) { // castling
+        if (from == e1) {
+            return to == g1 ? MOVE_W_SHORT_CASTLE : MOVE_W_LONG_CASTLE;
+        } else {
+            return to == g8 ? MOVE_B_SHORT_CASTLE : MOVE_B_LONG_CASTLE;
+        }
+    }
 
-int half_moves(Board *board) {
-    return board->state_stack[board->ply] & HALF_MOVE_MASK;
+    if (to_bb & (board->colors[WHITE] | board->colors[BLACK])) // capture
+        flags = 4;
+    
+    if ((from_bb & board->pieces[PAWN_IDX]) && (to_bb & ep_target(board))) // ep capture
+        flags = 5;
+
+    if ((from_bb & board->pieces[PAWN_IDX] & (RANK_2 | RANK_7)) && (to_bb & (RANK_4 | RANK_5))) // double pawn push
+        flags = 1;
+
+    if (promote)
+        flags |= 8;
+
+    switch (promote) {
+        case 'b':
+            flags |= 1;
+            break;
+        case 'r':
+            flags |= 2;
+            break;
+        case 'q':
+            flags |= 3;
+            break;
+    }
+
+    return new_move(from, to, flags);
 }
+
+static U64 perft_helper(Board *board, int depth) {
+    if (depth == 0)
+        return 1;
+
+    Move* moves = legal_moves(board);
+    Move* curr_move = moves;
+    U64 nodes = 0;
+
+    while (*curr_move) {
+        make_move(board, *curr_move);
+        nodes += perft_helper(board, depth-1);
+        unmake_move(board, *curr_move);
+
+        curr_move++;
+    }
+    
+    free(moves);
+    return nodes;
+}
+
+void print_perft(Board *board, int depth) {
+    Move* moves = legal_moves(board);
+    Move* curr_move = moves;
+    U64 total_nodes = 0;
+    U64 curr_node = 0;
+    
+    while (*curr_move) {
+        make_move(board, *curr_move);
+        print_move(*curr_move);
+        curr_node = perft_helper(board, depth-1);
+        printf(": %lu\n", curr_node);
+        total_nodes += curr_node;
+        unmake_move(board, *curr_move);
+
+        curr_move++;
+    }
+    printf("\nTotal nodes: %lu\n", total_nodes);
+
+    free(moves);
+}
+
 
 Board* from_fen(char* fen) {
     Board *board = (Board*)malloc(sizeof(Board));
@@ -580,12 +668,8 @@ Board* from_fen(char* fen) {
     return board;
 }
 
-void print_board(Board *board) {
-    StateFlags state = board->state_stack[board->ply];
-    char castle_rights[5];
-    int i;
-
-    printf("WHITE\n");
+void print_board_bb(Board *board) {
+    printf("\nWHITE\n");
     print_bb(board->colors[WHITE]);
     printf("\nBLACK\n");
     print_bb(board->colors[BLACK]);
@@ -602,7 +686,59 @@ void print_board(Board *board) {
     print_bb(board->pieces[QUEEN_IDX]);
     printf("\nKINGS\n");
     print_bb(board->pieces[KING_IDX]);
-    
+}
+
+void print_board(Board *board) {
+    StateFlags state = board->state_stack[board->ply];
+    U64 bb;
+    int i, j, k, c, color, piece;
+    char castle_rights[5];
+    printf("          %c to move\n", board->side_to_move ? 'b' : 'w');
+    for (i = 7; i >= 0; i--) {
+        printf("     %d ", i + 1);
+        for (j = 0; j < 8; j++) {
+            c = i % 2 != j % 2 ? '.' : ',';
+            for (k = 0; k < NUM_PIECES * NUM_COLORS; k++) {
+                piece = k % NUM_PIECES;
+                color = k / NUM_PIECES;
+                bb = board->pieces[piece] & board->colors[color];
+                
+                if ((bb >> (j+i*8)) & 1ULL) {
+                    switch (piece) {
+                        case PAWN_IDX:
+                            c = 'p';
+                            break;
+                        case KNIGHT_IDX:
+                            c = 'n';
+                            break;
+                        case BISHOP_IDX:
+                            c = 'b';
+                            break;
+                        case ROOK_IDX:
+                            c = 'r';
+                            break;
+                        case QUEEN_IDX:
+                            c = 'q';
+                            break;
+                        case KING_IDX:
+                            c = 'k';
+                            break;
+                        default:
+                            c = '?';
+                    }
+                    c -= color ? 0 : 0x20;
+                    break;
+                }
+            }
+            printf("%c ", c);
+        }
+        printf("\n");
+    }
+    printf("       ");
+    for (i = 0; i < 8; i++) {
+        printf("%c ", 0x61 + i);
+    }
+    printf("\n     ply %13d", board->ply);
     i = 0;
     if (can_castle(board, WHITE, KINGSIDE)) {
         castle_rights[i] = 'K';
@@ -625,8 +761,18 @@ void print_board(Board *board) {
         i++;
     }
     castle_rights[i] = '\0';
-
-    printf("CASTLING RIGHTS: %-4s\n",castle_rights);
+    printf("\n     castle %10s", castle_rights);
+    printf("\n     half_move %7d", half_moves(board));
+    printf("\n     ep_target %5s", "");
+    if (TEST_BIT(state, 26)) {
+        print_sq((state >> 20) & 0x3f);
+    } else {
+        printf(" -");
+    }
+    printf("\n");
+    //Move *moves = legal_moves(board);
+    /*print_move_buffer(moves);
+    printf("\n");*/
 }
 
 void wprint_board(Board *board) {
@@ -694,10 +840,19 @@ void wprint_board(Board *board) {
     wprintf(L"\n");
 }
 
+void print_move_buffer(Move *buffer) {
+    for (; *buffer; buffer++) {
+        printf("\n");
+        print_move(*buffer);
+    }
+    printf("\n");
+}
+
+
 void wprint_move_buffer(Move *buffer) {
     for (; *buffer; buffer++) {
         wprintf(L"\n");
-        print_move(*buffer);
+        wprint_move(*buffer);
     }
     wprintf(L"\n");
 }

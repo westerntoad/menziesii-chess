@@ -2,6 +2,10 @@
 #include "utils.h" // includes <stdio.h>
 
 void print_sq(Sq sq) {
+    printf("%c%d", 0x61 + (sq%8), sq/8 + 1);
+}
+
+void wprint_sq(Sq sq) {
     wprintf(L"%c%d", 0x61 + (sq%8), sq/8 + 1);
 }
 
@@ -26,6 +30,41 @@ bool is_promotion(Move move) {
 }
 
 void print_move(Move move) {
+    if (move == 0) {
+        printf("0000");
+        return;
+    }
+    /*if (((move >> 12) & 0b1110) == 0b10) {
+        printf("O-O");
+        if ((move>>12) & 1) { // if is long castle
+            printf("-O");
+        }
+
+        return;
+    }*/
+
+    print_sq(get_from(move));
+    print_sq(get_to(move));
+    
+    if (is_promotion(move)) {
+        switch ((move >> 12) & 0x03) {
+            case 0x00:
+                printf("n");
+                break;
+            case 0x01:
+                printf("b");
+                break;
+            case 0x02:
+                printf("r");
+                break;
+            case 0x03:
+                printf("q");
+                break;
+        }
+    }
+}
+
+void wprint_move(Move move) {
     if (((move >> 12) & 0b1110) == 0b10) {
         wprintf(L"O-O");
         if ((move>>12) & 1) { // if is long castle
@@ -57,7 +96,9 @@ void print_move(Move move) {
 }
 
 U64 pop_lsb(U64 *bb) {
-    return *bb & ~(*bb &= *bb - 1);
+    U64 old = *bb;
+    *bb &= *bb - 1;
+    return old & ~(*bb);
 }
 
 U64 nort_one(U64 bb) {
@@ -108,7 +149,7 @@ void print_bb(U64 bb) {
     int i, j;
     for (i = 7; i >= 0; i--) {
         for (j = 0; j < 8; j++)
-            printf("%d ", ((bb >> (j+i*8)) & 1ULL));
+            printf("%d ", (int)((bb >> (j+i*8)) & 1ULL));
         printf("\n");
     }
 }
