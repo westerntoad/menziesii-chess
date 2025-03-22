@@ -374,19 +374,20 @@ Move* legal_moves(Board *board) {
     aux1 = board->pieces[PAWN_IDX] & friendly;
     while (aux1) {
         aux2 = pop_lsb(&aux1);
-        aux3 = (curr_side ? sout_one(aux2) : nort_one(aux2)) & ~(enemy | friendly) & push_mask;
+        aux3 = (curr_side ? sout_one(aux2) : nort_one(aux2)) & ~(enemy | friendly);
 
         if (aux2 & pins) // if pawn is pinned
             aux3 &= r_moves(king, (friendly | enemy) & ~aux2);
 
-        if (aux3 & (RANK_1 | RANK_8)) { // if pawn promotion
+        if (aux3 & (RANK_1 | RANK_8) & push_mask) { // if pawn promotion
             for (j = 0; j < 4; j++) {
                 move = new_move(LOG2(aux2), LOG2(aux3), PROMOTE_N + j);
                 buff[i++] = move;
             }
         } else if (aux3) { // single push
-            move = new_move(LOG2(aux2), LOG2(aux3), 0);
-            buff[i++] = move;
+            if (aux3 & push_mask)
+                buff[i++] = new_move(LOG2(aux2), LOG2(aux3), 0);
+
             aux4 = (curr_side ? sout_one(aux3) : nort_one(aux3)) & ~(enemy | friendly) & push_mask;
             if (aux4 & (curr_side ? RANK_5 : RANK_4)) { // double push
                 move = new_move(LOG2(aux2), LOG2(aux4), DOUBLE_PUSH);
