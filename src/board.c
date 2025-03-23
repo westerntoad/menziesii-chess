@@ -259,7 +259,8 @@ void unmake_move(Board *board, Move move) {
     board->side_to_move ^= 1;
     bool curr_color = board->side_to_move;
     int i, captured_piece_idx;
-    StateFlags next_state = board->state_stack[board->ply--];
+    StateFlags next_state = board->state_stack[board->ply];
+    board->ply--;
 
     if (((move >> 12) & 0b1110) == 0b10) { // check if castle
         from = 0x8100000000000081ULL; // rook origin
@@ -569,8 +570,9 @@ void print_perft(Board *board, int depth) {
 printf("\n");
 print_board_bb(board);
 printf("\n");*/
-//print_board(board);
-//curr_move = pop_move(list);
+print_move(curr_move);
+printf("\n");
+print_board(board);
         make_move(board, curr_move);
 //printf("3: %x\n", *board->state_stack);
         print_move(curr_move);
