@@ -36,14 +36,6 @@ void print_move(Move move) {
         printf("0000");
         return;
     }
-    /*if (((move >> 12) & 0b1110) == 0b10) {
-        printf("O-O");
-        if ((move>>12) & 1) { // if is long castle
-            printf("-O");
-        }
-
-        return;
-    }*/
 
     print_sq(get_from(move));
     print_sq(get_to(move));

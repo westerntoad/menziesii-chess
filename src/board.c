@@ -192,8 +192,8 @@ void make_move(Board *board, Move move) {
     if (move >> 12 == 5) { // check if ep capture
         aux1 = curr_color ? sout_one(to) : nort_one(to); // ep-captured pawn
         
-        board->pieces[PAWN_IDX] &= aux1;
-        board->colors[curr_color ^ 1] &= aux1;
+        board->pieces[PAWN_IDX] &= ~aux1;
+        board->colors[curr_color ^ 1] &= ~aux1;
         next_state &= 0xfffe0000; // clear half-move clock
     } else if (move & 0x4000) { // check if capture
         for (j = 0; j < NUM_PIECES; j++) {
@@ -366,8 +366,8 @@ MoveList* legal_moves(Board *board) {
             push_move(list, curr_side ? MOVE_B_SHORT_CASTLE : MOVE_W_SHORT_CASTLE);
 
         aux2 = 0x0c0000000000000cULL & aux1;
-        if (can_castle(board, curr_side, 1) && !(aux2 & (ds | friendly | enemy))) // short_castle
-            push_move(list, curr_side ? MOVE_B_LONG_CASTLE : MOVE_B_LONG_CASTLE);
+        if (can_castle(board, curr_side, 1) && !(aux2 & (ds | friendly | enemy))) // long_castle
+            push_move(list, curr_side ? MOVE_B_LONG_CASTLE : MOVE_W_LONG_CASTLE);
     }
 
     // pawn moves
@@ -400,7 +400,7 @@ MoveList* legal_moves(Board *board) {
         while (aux3 && !(aux2 & pins)) {
             aux4 = pop_lsb(&aux3);
             U64 captured_ep_mask = curr_side ? nort_one(aux4) : sout_one(aux4);
-            if ((aux4 & push_mask) || (captured_ep_mask & capture_mask)) {
+            if ((aux4 & (push_mask | capture_mask)) || (captured_ep_mask & capture_mask)) {
                 if (aux4 & ep_targ) { // ep capture
                     U64 ep_discover_mask = (friendly | enemy) & ~(captured_ep_mask | aux2);
                     if (!(r_moves(king, ep_discover_mask) & enemy & (board->pieces[QUEEN_IDX] | board->pieces[ROOK_IDX]))) { // if not ep discovered check
@@ -497,9 +497,6 @@ Move move_from_str(Board *board, char* str) {
     to = sq_from_str(str);
     from_bb = 1ULL << from;
     to_bb = 1ULL << to;
-/*print_bb(from_bb);
-printf("\n");
-print_bb(to_bb);*/
     
     if ((1ULL << from) & (e1 | e8) & board->pieces[KING_IDX]) { // castling
         if (from == e1) {
@@ -568,8 +565,12 @@ void print_perft(Board *board, int depth) {
     U64 curr_node = 0;
     
     while (curr_move) {
-//print_move(curr_move);
-//printf("\n");
+/*print_move(curr_move);
+printf("\n");
+print_board_bb(board);
+printf("\n");*/
+//print_board(board);
+//curr_move = pop_move(list);
         make_move(board, curr_move);
 //printf("3: %x\n", *board->state_stack);
         print_move(curr_move);
@@ -578,7 +579,7 @@ void print_perft(Board *board, int depth) {
         curr_node = perft_helper(board, depth-1);
         printf("%lu\n", curr_node);
         total_nodes += curr_node;
-//printf("1: %p\n", board->state_stack);
+//printf("state_stack pt: %p\n", board->state_stack);
         unmake_move(board, curr_move);
 //printf("2: %x\n", *board->state_stack);
 
