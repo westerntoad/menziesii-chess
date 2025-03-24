@@ -420,7 +420,8 @@ MoveList* legal_moves(Board *board) {
 
         aux2 = 0x0c0000000000000cULL & aux1;
         aux3 = curr_side ? 0x0100000000000000ULL : 0x0000000000000001ULL; // rook long castle home
-        if (can_castle(board, curr_side, 1) && !(aux2 & (ds | friendly | enemy)) && (aux3 & board->pieces[ROOK_IDX])) // long_castle
+        aux4 = curr_side ? 0x0200000000000000ULL : 0x0000000000000002ULL; // extra check outside of castle mask
+        if (can_castle(board, curr_side, 1) && !(aux2 & (ds | friendly | enemy)) && (aux3 & board->pieces[ROOK_IDX]) && !((friendly | enemy) & aux4)) // long_castle
             push_move(list, curr_side ? MOVE_B_LONG_CASTLE : MOVE_W_LONG_CASTLE);
     }
 
@@ -652,8 +653,8 @@ void print_perft(Board *board, int depth) {
 #if DEBUG
     Board *copy;
 #endif
-    clock_t start = clock(), end;
-    double duration;
+    //clock_t start = clock(), end;
+    //double duration;
     MoveList* list = legal_moves(board);
     Move curr_move = pop_move(list);
     U64 total_nodes = 0;
@@ -684,9 +685,10 @@ void print_perft(Board *board, int depth) {
 #endif
         curr_move = pop_move(list);
     }
-    end = clock();
-    duration = (double)(end - start) / CLOCKS_PER_SEC;
-    printf("\nTotal nodes: %lu (%d nps)\n", total_nodes, (int)(total_nodes / duration));
+    //end = clock();
+    //duration = (double)(end - start) / CLOCKS_PER_SEC;
+    //printf("\nTotal nodes: %lu (%d nps)\n", total_nodes, (int)(total_nodes / duration));
+    printf("\nTotal nodes: %lu\n", total_nodes);
 
     free_movelist(list);
 }
