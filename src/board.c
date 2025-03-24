@@ -188,7 +188,7 @@ void make_move(Board *board, Move move) {
     StateFlags next_state = board->state_stack[board->ply];
     int i, j;
 
-    next_state &= 0xfbf1ffff; // clear previous captured piece & ep_target
+    next_state &= 0xf801ffff; // clear previous captured piece & ep_target
 
     board->ply++;
     board->side_to_move ^= 1;
@@ -240,7 +240,7 @@ void make_move(Board *board, Move move) {
     }
     
     if (move >> 12 == 5) { // check if ep capture
-        aux1 = curr_color ? sout_one(to) : nort_one(to); // ep-captured pawn
+        aux1 = curr_color ? nort_one(to) : sout_one(to); // ep-captured pawn
         
         board->pieces[PAWN_IDX] &= ~aux1;
         board->colors[curr_color ^ 1] &= ~aux1;
