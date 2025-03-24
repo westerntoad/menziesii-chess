@@ -9,6 +9,54 @@
 #define INITIAL_MOVE_CAPACITY 500
 #define HALF_MOVE_MASK 0x1ffff
 
+#if DEBUG
+static Board* copy_board(Board *board) { // DEBUG
+    int i;
+    Board *copy = (Board*)malloc(sizeof(Board));
+    memset(copy, 0, sizeof(Board));
+    copy->stack_capacity = INITIAL_MOVE_CAPACITY;
+    copy->state_stack = (StateFlags *)malloc(board->stack_capacity * sizeof(StateFlags));
+
+    for (i = 0; i < NUM_COLORS; i++)
+        copy->colors[i] = board->colors[i];
+
+    for (i = 0; i < NUM_PIECES; i++)
+        copy->pieces[i] = board->pieces[i];
+
+    for (i = 0; i <= board->ply; i++)
+        copy->state_stack[i] = board->state_stack[i];
+
+    copy->ply = board->ply;
+    copy->side_to_move = board->side_to_move;
+
+    return copy;
+}
+
+static bool boards_equal(Board *b1, Board *b2) { // DEBUG
+    int i;
+
+    if (b1->ply != b2->ply)
+        return false;
+
+    for (i = 0; i < NUM_COLORS; i++) {
+        if (b1->colors[i] != b2->colors[i])
+            return false;
+    }
+
+    for (i = 0; i < NUM_PIECES; i++) {
+        if (b1->pieces[i] != b2->pieces[i])
+            return false;
+    }
+
+    for (i = 0; i <= b1->ply; i++) {
+        if (b1->state_stack[i] != b2->state_stack[i])
+            return false;
+    }
+
+    return true;
+}
+#endif
+
 static U64 danger_squares(Board *board) {
     U64 aux1, aux2;
     U64 friendly = board->colors[board->side_to_move];
@@ -139,6 +187,8 @@ void make_move(Board *board, Move move) {
     bool curr_color = board->side_to_move;
     StateFlags next_state = board->state_stack[board->ply];
     int i, j;
+
+    next_state &= 0xfff1ffff; // clear previous captured piece
 
     board->ply++;
     board->side_to_move ^= 1;
@@ -538,6 +588,9 @@ static U64 perft_helper(Board *board, int depth) {
     if (depth == 0)
         return 1;
 
+#if DEBUG
+    Board *copy;
+#endif
     MoveList* list = legal_moves(board);
     Move curr_move = pop_move(list);
     U64 nodes = 0;
@@ -548,10 +601,24 @@ static U64 perft_helper(Board *board, int depth) {
     }*/
 
     while (curr_move) {
+#if DEBUG
+        copy = copy_board(board);
+#endif
         make_move(board, curr_move);
         nodes += perft_helper(board, depth-1);
         unmake_move(board, curr_move);
-
+#if DEBUG
+        if (!boards_equal(board, copy)) {
+            printf("\nMAKE MOVE != UNMAKE MOVE FOR:");
+            print_move(curr_move);
+            printf(" %lx\n", curr_move >> 12);
+            print_board(copy);
+            printf("\n");
+            print_board(board);
+            exit(EXIT_FAILURE);
+        }
+        free_board(copy);
+#endif
         curr_move = pop_move(list);
     }
     
@@ -560,31 +627,37 @@ static U64 perft_helper(Board *board, int depth) {
 }
 
 void print_perft(Board *board, int depth) {
+#if DEBUG
+    Board *copy;
+#endif
     MoveList* list = legal_moves(board);
     Move curr_move = pop_move(list);
     U64 total_nodes = 0;
     U64 curr_node = 0;
     
     while (curr_move) {
-/*print_move(curr_move);
-printf("\n");
-print_board_bb(board);
-printf("\n");*/
-print_move(curr_move);
-printf("\n");
-print_board(board);
+#if DEBUG
+        copy = copy_board(board);
+#endif
         make_move(board, curr_move);
-//printf("3: %x\n", *board->state_stack);
         print_move(curr_move);
         printf(": ");
-//printf("4: %p\n", *board->state_stack);
         curr_node = perft_helper(board, depth-1);
         printf("%lu\n", curr_node);
         total_nodes += curr_node;
-//printf("state_stack pt: %p\n", board->state_stack);
         unmake_move(board, curr_move);
-//printf("2: %x\n", *board->state_stack);
-
+#if DEBUG
+        if (!boards_equal(board, copy)) {
+            printf("\nMAKE MOVE != UNMAKE MOVE FOR:");
+            print_move(curr_move);
+            printf(" %lx\n", curr_move >> 12);
+            print_board(copy);
+            printf("\n");
+            print_board(board);
+            exit(EXIT_FAILURE);
+        }
+        free_board(copy);
+#endif
         curr_move = pop_move(list);
     }
     printf("\nTotal nodes: %lu\n", total_nodes);
@@ -794,9 +867,12 @@ void print_board(Board *board) {
         printf(" -");
     }
     printf("\n");
-    //Move *moves = legal_moves(board);
-    /*print_move_buffer(moves);
-    printf("\n");*/
+#if DEBUG
+    for (i = 0; i <= board->ply; i++) {
+        printf("%x\n", board->state_stack[i]);
+    }
+    printf("\n");
+#endif
 }
 
 void wprint_board(Board *board) {

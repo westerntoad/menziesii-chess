@@ -22,14 +22,6 @@ int main(void) {
     }
     init_move_lookup_tables();
 
-
-    /*Board *board = from_fen("4nn2/5P2/8/8/8/8/8/k6K w - - 0 1");
-    //Move move = new_move(f7, e8, PROMOTE_CAPTURE_Q);
-    Move move = move_from_str(board, "f7a1q");
-    make_move(board, move);
-    print_board(board);
-    return 0;*/
-
     while (1) {
         if (fgets(str, MAX_STR_SIZE, stdin) == NULL)
             return -1;
