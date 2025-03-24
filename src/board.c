@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <wchar.h>  // used for unicode printing
 #include "board.h"
 #include "movegen.h"
@@ -651,6 +652,8 @@ void print_perft(Board *board, int depth) {
 #if DEBUG
     Board *copy;
 #endif
+    clock_t start = clock(), end;
+    double duration;
     MoveList* list = legal_moves(board);
     Move curr_move = pop_move(list);
     U64 total_nodes = 0;
@@ -681,7 +684,9 @@ void print_perft(Board *board, int depth) {
 #endif
         curr_move = pop_move(list);
     }
-    printf("\nTotal nodes: %lu\n", total_nodes);
+    end = clock();
+    duration = (double)(end - start) / CLOCKS_PER_SEC;
+    printf("\nTotal nodes: %lu (%d nps)\n", total_nodes, (int)(total_nodes / duration));
 
     free_movelist(list);
 }
