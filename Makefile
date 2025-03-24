@@ -13,7 +13,9 @@ TEST_DIR = tests
 
 # Source and object files
 SRC_FILES = $(wildcard $(SRC_DIR)/*.c)
-OBJ_FILES = $(SRC_FILES:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+OBJ_FILES = $(filter-out $(SRC_DIR)/main.c, $(SRC_FILES))
+OBJ_FILES := $(OBJ_FILES:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+MAIN_OBJ = $(OBJ_DIR)/main.o
 
 # Executables
 EXEC = $(BIN_DIR)/menziesii
@@ -27,11 +29,15 @@ $(BIN_DIR) $(OBJ_DIR):
 	mkdir -p $@
 
 # Main Chess Bot executable
-$(EXEC): $(OBJ_FILES)
-	$(CC) $(OBJ_FILES) -o $(EXEC) $(LDFLAGS)
+$(EXEC): $(OBJ_FILES) $(MAIN_OBJ)
+	$(CC) $(OBJ_FILES) $(MAIN_OBJ) -o $(EXEC) $(LDFLAGS)
 
 # Object files compilation rule
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
+
+# Compile main separately
+$(MAIN_OBJ): $(SRC_DIR)/main.c
 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 # Target for unit tests
@@ -41,7 +47,7 @@ $(TEST_EXEC): $(OBJ_FILES) $(TEST_DIR)/test_chessbot.o
 	$(CC) $(OBJ_FILES) $(TEST_DIR)/test_chessbot.o -o $(TEST_EXEC) $(LDFLAGS)
 
 # Test object files compilation
-$(TEST_DIR)/test_chessbot.o: $(TEST_DIR)/test_chessbot.c
+$(TEST_DIR)/test_chessbot.o: $(TEST_DIR)/test_menziesii.c $(wildcard $(INCLUDE_DIR)/*.h)
 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 # Clean object and binary files
@@ -71,3 +77,4 @@ deps: $(OBJ_FILES:.o=.d)
 
 # Phony targets (not associated with files)
 .PHONY: all clean debug tests run run-tests deps
+

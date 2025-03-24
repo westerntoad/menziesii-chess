@@ -80,6 +80,13 @@ U64 b_moves(U64 orig, U64 blocks) {
     return sliding_attacks(orig, blocks, dxes, dyes);
 }
 
+U64 h_moves(U64 orig, U64 blocks) {
+    const int dxes[4] = { 0,  1 };
+    const int dyes[4] = { 0, -1 };
+
+    return sliding_attacks(orig, blocks, dxes, dyes);
+}
+
 U64 q_moves(U64 orig, U64 blocks) {
     return r_moves(orig, blocks) | b_moves(orig, blocks);
 }
