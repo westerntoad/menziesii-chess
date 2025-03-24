@@ -188,7 +188,7 @@ void make_move(Board *board, Move move) {
     StateFlags next_state = board->state_stack[board->ply];
     int i, j;
 
-    next_state &= 0xfff1ffff; // clear previous captured piece
+    next_state &= 0xfbf1ffff; // clear previous captured piece & ep_target
 
     board->ply++;
     board->side_to_move ^= 1;
@@ -410,14 +410,16 @@ MoveList* legal_moves(Board *board) {
     } else if (checkers) { // single check, create capture & push mask
         capture_mask = checkers;
         push_mask = ray_between(board->pieces[KING_IDX] & friendly, checkers);
-    } else {
+    } else if (king & (curr_side ? 0x1000000000000000ULL : 0x0000000000000010)) { // if king is at home square
         aux1 = curr_side ? 0x6e00000000000000ULL : 0x000000000000006eULL; // castle masks
         aux2 = 0x6000000000000060ULL & aux1;
-        if (can_castle(board, curr_side, 0) && !(aux2 & (ds | friendly | enemy))) // short_castle
+        aux3 = curr_side ? 0x8000000000000000ULL : 0x0000000000000080ULL; // rook short castle home
+        if (can_castle(board, curr_side, 0) && !(aux2 & (ds | friendly | enemy)) && (aux3 & board->pieces[ROOK_IDX])) // short_castle
             push_move(list, curr_side ? MOVE_B_SHORT_CASTLE : MOVE_W_SHORT_CASTLE);
 
         aux2 = 0x0c0000000000000cULL & aux1;
-        if (can_castle(board, curr_side, 1) && !(aux2 & (ds | friendly | enemy))) // long_castle
+        aux3 = curr_side ? 0x0100000000000000ULL : 0x0000000000000001ULL; // rook long castle home
+        if (can_castle(board, curr_side, 1) && !(aux2 & (ds | friendly | enemy)) && (aux3 & board->pieces[ROOK_IDX])) // long_castle
             push_move(list, curr_side ? MOVE_B_LONG_CASTLE : MOVE_W_LONG_CASTLE);
     }
 
