@@ -600,7 +600,7 @@ Move move_from_str(Board *board, char* str) {
     return new_move(from, to, flags);
 }
 
-static U64 perft_helper(Board *board, int depth) {
+U64 perft(Board *board, int depth) {
     if (depth == 0)
         return 1;
 
@@ -621,7 +621,7 @@ static U64 perft_helper(Board *board, int depth) {
         copy = copy_board(board);
 #endif
         make_move(board, curr_move);
-        nodes += perft_helper(board, depth-1);
+        nodes += perft(board, depth-1);
         unmake_move(board, curr_move);
 #if DEBUG
         if (!boards_equal(board, copy)) {
@@ -660,7 +660,7 @@ void print_perft(Board *board, int depth) {
         make_move(board, curr_move);
         print_move(curr_move);
         printf(": ");
-        curr_node = perft_helper(board, depth-1);
+        curr_node = perft(board, depth-1);
         printf("%lu\n", curr_node);
         total_nodes += curr_node;
         unmake_move(board, curr_move);
@@ -811,9 +811,14 @@ void print_board(Board *board) {
     U64 bb;
     int i, j, k, c, color, piece;
     char castle_rights[5];
-    printf("          %c to move\n", board->side_to_move ? 'b' : 'w');
+    printf("           %c to move\n", board->side_to_move ? 'b' : 'w');
+    printf("       ");
+    for (i = 0; i < 8; i++) {
+        printf("%c ", 0x61 + i);
+    }
+    printf("\n");
     for (i = 7; i >= 0; i--) {
-        printf("     %d ", i + 1);
+        printf("     %d ", i+1);
         for (j = 0; j < 8; j++) {
             c = i % 2 != j % 2 ? '.' : ',';
             for (k = 0; k < NUM_PIECES * NUM_COLORS; k++) {
@@ -850,13 +855,13 @@ void print_board(Board *board) {
             }
             printf("%c ", c);
         }
-        printf("\n");
+        printf("%d\n", i+1);
     }
     printf("       ");
     for (i = 0; i < 8; i++) {
         printf("%c ", 0x61 + i);
     }
-    printf("\n     ply %13d", board->ply);
+    printf("\n     ply %15d", board->ply);
     i = 0;
     if (can_castle(board, WHITE, KINGSIDE)) {
         castle_rights[i] = 'K';
@@ -879,9 +884,9 @@ void print_board(Board *board) {
         i++;
     }
     castle_rights[i] = '\0';
-    printf("\n     castle %10s", castle_rights);
-    printf("\n     half_move %7d", half_moves(board));
-    printf("\n     ep_target %5s", "");
+    printf("\n     castle %12s", castle_rights);
+    printf("\n     half_move %9d", half_moves(board));
+    printf("\n     ep_target %7s", "");
     if (TEST_BIT(state, 26)) {
         print_sq((state >> 20) & 0x3f);
     } else {
