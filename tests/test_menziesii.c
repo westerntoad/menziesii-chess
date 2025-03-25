@@ -1,5 +1,6 @@
 #include "board.h"
 #include "types.h"
+#include "movegen.h"
 #include "utils.h"
 
 static int TESTS_RUN;
@@ -52,6 +53,12 @@ static void test_pawns() {
     move_assert("f4e3", "K7/8/8/6B1/4Pp2/8/8/2k5 b - e3 0 1", true, "pinned pawns can capture ep");
 }
 
+static void test_sliders() {
+    printf("Testing pawn legal move generation...\n");
+    
+    move_assert("e5g3", "K7/8/4R3/4b3/8/8/8/4k3 b - - 0 1", false, "bishops cannot escape pin");
+}
+
 int main(void) {
     init_move_lookup_tables();
     TESTS_RUN = 0;
@@ -63,6 +70,7 @@ int main(void) {
     return 0;*/
 
     test_pawns();
+    test_sliders();
 
     if (TESTS_RUN == TESTS_PASSED) {
         printf("\nAll tests passed.\n");

@@ -474,25 +474,6 @@ MoveList* legal_moves(Board *board) {
                     push_move(list, move);
                 }
             }
-            /*if ((aux4 & (push_mask | capture_mask)) || (captured_ep_mask & capture_mask)) {
-                if (aux4 & ep_targ) { // ep capture
-                    U64 ep_discover_mask = (friendly | enemy) & ~(captured_ep_mask | aux2);
-                    if (!(r_moves(king, ep_discover_mask) & enemy & (board->pieces[QUEEN_IDX] | board->pieces[ROOK_IDX]))) { // if not ep discovered check
-                        move = new_move(LOG2(aux2), LOG2(aux4), EP_CAPTURE);
-                        push_move(list, move);
-                    }
-                } else if (aux4 & capture_mask) {
-                    if (aux4 & (RANK_1 | RANK_8)) {
-                        for (j = 0; j < 4; j++) {
-                            move = new_move(LOG2(aux2), LOG2(aux4), PROMOTE_CAPTURE_N + j);
-                            push_move(list, move);
-                        }
-                    } else {
-                        move = new_move(LOG2(aux2), LOG2(aux4), 4);
-                        push_move(list, move);
-                    }
-                }
-            }*/
         }
     }
 
@@ -513,8 +494,13 @@ MoveList* legal_moves(Board *board) {
         aux2 = pop_lsb(&aux1);
         aux3 = b_moves(aux2, friendly | enemy) & ~friendly;
 
-        if (aux2 & pins)
-            aux3 &= b_moves(king, (friendly | enemy) & ~aux2);
+        if (aux2 & pins) {
+            U64 pin_rays = b_moves(king, (friendly | enemy) & ~aux2);
+            if (!(pin_rays & enemy & (board->pieces[BISHOP_IDX] | board->pieces[QUEEN_IDX])))
+                pin_rays &= 0ULL;
+
+            aux3 &= pin_rays;
+        }
 
         while (aux3) {
             aux4 = pop_lsb(&aux3);
@@ -528,8 +514,13 @@ MoveList* legal_moves(Board *board) {
         aux2 = pop_lsb(&aux1);
         aux3 = r_moves(aux2, friendly | enemy) & ~friendly;
 
-        if (aux2 & pins)
-            aux3 &= r_moves(king, (friendly | enemy) & ~aux2);
+        if (aux2 & pins) {
+            U64 pin_rays = r_moves(king, (friendly | enemy) & ~aux2);
+            if (!(pin_rays & enemy & (board->pieces[ROOK_IDX] | board->pieces[QUEEN_IDX])))
+                pin_rays &= 0ULL;
+
+            aux3 &= pin_rays;
+        }
 
         while (aux3) {
             aux4 = pop_lsb(&aux3);
