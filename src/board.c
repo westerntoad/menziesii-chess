@@ -452,16 +452,18 @@ MoveList* legal_moves(Board *board) {
         U64 ep_targ = ep_target(board);
         aux4 = curr_side ? sout_one(aux2) : nort_one(aux2);
         aux3 = (east_one(aux4) | west_one(aux4)) & (enemy | ep_targ);
-        while (aux3 && !(aux2 & pins)) {
+        while (aux3) {
             aux4 = pop_lsb(&aux3);
             U64 captured_ep_mask = curr_side ? nort_one(ep_targ) : sout_one(ep_targ);
             if ((aux4 & ep_targ) && ((captured_ep_mask & capture_mask) || (aux4 & push_mask))) {
                 U64 ep_discover_mask = ((friendly | enemy) & ~(captured_ep_mask | aux2)) | aux4;
                 if (!(r_moves(king, ep_discover_mask) & enemy & (board->pieces[QUEEN_IDX] | board->pieces[ROOK_IDX]))) { // if not ep discovered check
-                    move = new_move(LOG2(aux2), LOG2(aux4), EP_CAPTURE);
-                    push_move(list, move);
+                    if (!(aux2 & pins) || (b_moves(king, (friendly | enemy) & ~aux2) & aux4)) {
+                        move = new_move(LOG2(aux2), LOG2(aux4), EP_CAPTURE);
+                        push_move(list, move);
+                    }
                 }
-            } else if (aux4 & (push_mask | capture_mask)) {
+            } else if ((aux4 & (push_mask | capture_mask)) && (!(aux2 & pins) || (b_moves(king, (friendly | enemy) & ~aux2) & aux4))) {
                 if (aux4 & (RANK_1 | RANK_8)) {
                     for (j = 0; j < 4; j++) {
                         move = new_move(LOG2(aux2), LOG2(aux4), PROMOTE_CAPTURE_N + j);

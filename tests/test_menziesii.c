@@ -48,6 +48,8 @@ static void test_pawns() {
     move_assert("f4e3", "8/8/8/3k4/4Pp2/8/8/K7 b - e3 0 1", true, "pawn cannot en passant out of check");
     move_assert("d4e3", "K7/8/8/8/k2pP2R/8/8/8 b - e3 0 1", false, "pawn en passant can cause a self-discovered check");
     move_assert("f4g3", "K7/8/8/6k1/5pP1/8/8/6R1 b - g3 0 1", true, "should be able to en passant pinned pawn");
+    move_assert("d7c6", "4k3/3p4/2B5/8/8/8/8/7K b - - 0 1", true, "pawns should be able to capture the piece that pins them");
+    move_assert("f4e3", "K7/8/8/6B1/4Pp2/8/8/2k5 b - e3 0 1", true, "pinned pawns can capture ep");
 }
 
 int main(void) {
