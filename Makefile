@@ -41,6 +41,7 @@ $(MAIN_OBJ): $(SRC_DIR)/main.c
 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 # Target for unit tests
+tests: CFLAGS += $(DEBUG_CFLAGS)
 tests: $(TEST_EXEC)
 
 $(TEST_EXEC): $(OBJ_FILES) $(TEST_DIR)/test_chessbot.o

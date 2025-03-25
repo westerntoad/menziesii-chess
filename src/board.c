@@ -463,7 +463,8 @@ MoveList* legal_moves(Board *board) {
                         push_move(list, move);
                     }
                 }
-            } else if ((aux4 & (push_mask | capture_mask)) && (!(aux2 & pins) || (b_moves(king, (friendly | enemy) & ~aux2) & aux4))) {
+            } else if ((aux4 & (push_mask | capture_mask)) && (!(aux2 & pins) || ((b_moves(king, (friendly | enemy) & ~aux2) & aux4)
+                            && !(r_moves(king, (friendly | enemy) & ~aux2) & (board->pieces[ROOK_IDX] | board->pieces[QUEEN_IDX]) & enemy)))) { // FOR THE LOVE OF GOD FIX ME
                 if (aux4 & (RANK_1 | RANK_8)) {
                     for (j = 0; j < 4; j++) {
                         move = new_move(LOG2(aux2), LOG2(aux4), PROMOTE_CAPTURE_N + j);
@@ -536,7 +537,7 @@ MoveList* legal_moves(Board *board) {
 
         if (aux2 & pins) {
             aux4 = r_moves(king, (friendly | enemy) & ~aux2);
-            if (aux4 & (board->pieces[ROOK_IDX] | board->pieces[QUEEN_IDX]) & enemy) {
+            if (aux4 & (board->pieces[ROOK_IDX] | board->pieces[QUEEN_IDX]) & ~checkers & enemy) {
                 aux3 = aux4 & r_moves(aux2, friendly | enemy) & ~friendly;
             } else {
                 aux4 = b_moves(king, (friendly | enemy) & ~aux2);

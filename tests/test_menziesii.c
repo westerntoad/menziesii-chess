@@ -74,14 +74,17 @@ static void test_pawns() {
     assert_move("f4g3", "K7/8/8/6k1/5pP1/8/8/6R1 b - g3 0 1", true, "should be able to en passant pinned pawn");
     assert_move("d7c6", "4k3/3p4/2B5/8/8/8/8/7K b - - 0 1", true, "pawns should be able to capture the piece that pins them");
     assert_move("f4e3", "K7/8/8/6B1/4Pp2/8/8/2k5 b - e3 0 1", true, "pinned pawns can capture ep");
+    assert_move("f4g3", "K7/8/8/8/1R3p1k/6P1/8/8 b - - 0 1", false, "pinned pawns cannot capture");
+    //assert_move("", "", true, "");
 }
 
 static void test_sliders() {
-    printf("Testing pawn legal move generation...\n");
+    printf("Testing sliding piece legal move generation...\n");
     
     //assert_move("", "", false, "");
     assert_move("e5g3", "K7/8/4R3/4b3/8/8/8/4k3 b - - 0 1", false, "bishops cannot escape pin");
-    assert_move("d2d1", "4k2r/8/8/8/8/2q5/3Q4/r3K2R w - - 0 1", false, "queen cannot leave pin to block check");
+    assert_move("d2d1", "4k2r/8/8/8/8/2q5/3Q4/r3K2R w - - 0 1", false, "queen cannot leave diagonal slider pin to block check");
+    assert_move("d1d2", "4k3/8/8/8/8/2q5/8/q2QK3 w - - 0 1", false, "queen cannot leave orthoganal slider pin to block check");
 }
 
 static void test_perfts() {
@@ -93,7 +96,6 @@ static void test_perfts() {
 
     // The following tests were taken from peterellisjones on Github Gist
     // https://gist.github.com/peterellisjones/8c46c28141c162d1d8a0f0badbc9cff9
-    //assert_perft("", , );
     assert_perft("r6r/1b2k1bq/8/8/7B/8/8/R3K2R b KQ - 3 2", 1, 8);
     assert_perft("8/8/8/2k5/2pP4/8/B7/4K3 b - d3 0 3", 1, 8);
     assert_perft("r1bqkbnr/pppppppp/n7/8/8/P7/1PPPPPPP/RNBQKBNR w KQkq - 2 2", 1, 19);
@@ -118,11 +120,20 @@ static void test_perfts() {
     assert_perft("8/k1P5/8/1K6/8/8/8/8 w - - 0 1", 7, 567584);
     assert_perft("8/8/2k5/5q2/5n2/8/5K2/8 b - - 0 1", 4, 23527);
 
+    //assert_perft("", , );
+    assert_perft("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 5, 4865609);
+    assert_perft("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1", 4, 4085603);
+    assert_perft("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", 5, 674624);
+    assert_perft("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 4, 422333);
+    assert_perft("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8", 4, 2103487);
+    assert_perft("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10", 4, 3894594);
+    //assert_perft("", , );
+    
     end = clock();
     duration = (double)(end - start) / CLOCKS_PER_SEC;
 
     if (PERFTS_PASSED) {
-        printf("All perft tests passed with an average speed of %lu nps", (long int)(PERFT_NODES / duration));
+        printf("All perft tests passed with an average speed of %.2lf million nps", (double)((PERFT_NODES / duration) / 1000000));
     }
 }
 
