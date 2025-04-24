@@ -10,17 +10,17 @@ static bool PERFTS_PASSED;
 static U64 PERFT_NODES;
 
 static bool is_move(Move move, Board *board) {
-    MoveList *list = legal_moves(board);
+    Move *curr = (Move[256]){0};
+    Move *end = legal_moves(board, curr);
     size_t i;
 
-    for (i = 0; i < list->size; i++) {
-        if (list->data[i] == move) {
-            free(list);
+    while (curr < end) {
+        if (*curr == move)
             return true;
-        }
+
+        curr++;
     }
     
-    free(list);
     return false;
 }
 

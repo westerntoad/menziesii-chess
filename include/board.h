@@ -17,7 +17,7 @@ typedef struct {
 
 void make_move(Board *board, Move move);
 void unmake_move(Board *board, Move move);
-MoveList* legal_moves(Board *board);
+Move* legal_moves(Board *board, Move *list);
 Move move_from_str(Board *board, char* str);
 U64 perft(Board *board, int depth);
 void print_perft(Board *board, int depth);

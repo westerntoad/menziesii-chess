@@ -381,8 +381,8 @@ void unmake_move(Board *board, Move move) {
     board->colors[curr_color] |= from;
 }
 
-MoveList* legal_moves(Board *board) {
-    MoveList *list = new_movelist();
+Move* legal_moves(Board *board, Move *given) {
+    Move *list = given;
     U64 aux1, aux2, aux3, aux4;
     Sq from;
     Move move;
@@ -403,7 +403,7 @@ MoveList* legal_moves(Board *board) {
     while (aux2) {
         aux1 = pop_lsb(&aux2);
         move = new_move(from, LOG2(aux1), aux1 & enemy ? 4 : 0);
-        push_move(list, move);
+        *(list++) = move;
     }
 
     if (POP_COUNT(checkers) > 1) { // double check or more
@@ -416,13 +416,13 @@ MoveList* legal_moves(Board *board) {
         aux2 = 0x6000000000000060ULL & aux1;
         aux3 = curr_side ? 0x8000000000000000ULL : 0x0000000000000080ULL; // rook short castle home
         if (can_castle(board, curr_side, 0) && !(aux2 & (ds | friendly | enemy)) && (aux3 & board->pieces[ROOK_IDX])) // short_castle
-            push_move(list, curr_side ? MOVE_B_SHORT_CASTLE : MOVE_W_SHORT_CASTLE);
+            *(list++) = curr_side ? MOVE_B_SHORT_CASTLE : MOVE_W_SHORT_CASTLE;
 
         aux2 = 0x0c0000000000000cULL & aux1;
         aux3 = curr_side ? 0x0100000000000000ULL : 0x0000000000000001ULL; // rook long castle home
         aux4 = curr_side ? 0x0200000000000000ULL : 0x0000000000000002ULL; // extra check outside of castle mask
         if (can_castle(board, curr_side, 1) && !(aux2 & (ds | friendly | enemy)) && (aux3 & board->pieces[ROOK_IDX]) && !((friendly | enemy) & aux4)) // long_castle
-            push_move(list, curr_side ? MOVE_B_LONG_CASTLE : MOVE_W_LONG_CASTLE);
+            *(list++) = curr_side ? MOVE_B_LONG_CASTLE : MOVE_W_LONG_CASTLE;
     }
 
     // pawn moves
@@ -437,16 +437,16 @@ MoveList* legal_moves(Board *board) {
         if (aux3 & (RANK_1 | RANK_8) & push_mask) { // if pawn promotion
             for (j = 0; j < 4; j++) {
                 move = new_move(LOG2(aux2), LOG2(aux3), PROMOTE_N + j);
-                push_move(list, move);
+                *(list++) = move;
             }
         } else if (aux3) { // single push
             if (aux3 & push_mask)
-                push_move(list, new_move(LOG2(aux2), LOG2(aux3), 0));
+                *(list++) = new_move(LOG2(aux2), LOG2(aux3), 0);
 
             aux4 = (curr_side ? sout_one(aux3) : nort_one(aux3)) & ~(enemy | friendly) & push_mask;
             if (aux4 & (curr_side ? RANK_5 : RANK_4)) { // double push
                 move = new_move(LOG2(aux2), LOG2(aux4), DOUBLE_PUSH);
-                push_move(list, move);
+                *(list++) = move;
             }
         }
         U64 ep_targ = ep_target(board);
@@ -460,7 +460,7 @@ MoveList* legal_moves(Board *board) {
                 if (!(r_moves(king, ep_discover_mask) & enemy & (board->pieces[QUEEN_IDX] | board->pieces[ROOK_IDX]))) { // if not ep discovered check
                     if (!(aux2 & pins) || (b_moves(king, (friendly | enemy) & ~aux2) & aux4)) {
                         move = new_move(LOG2(aux2), LOG2(aux4), EP_CAPTURE);
-                        push_move(list, move);
+                        *(list++) = move;
                     }
                 }
             } else if ((aux4 & (push_mask | capture_mask)) && (!(aux2 & pins) || ((b_moves(king, (friendly | enemy) & ~aux2) & aux4)
@@ -468,11 +468,11 @@ MoveList* legal_moves(Board *board) {
                 if (aux4 & (RANK_1 | RANK_8)) {
                     for (j = 0; j < 4; j++) {
                         move = new_move(LOG2(aux2), LOG2(aux4), PROMOTE_CAPTURE_N + j);
-                        push_move(list, move);
+                        *(list++) = move;
                     }
                 } else {
                     move = new_move(LOG2(aux2), LOG2(aux4), 4);
-                    push_move(list, move);
+                    *(list++) = move;
                 }
             }
         }
@@ -486,7 +486,7 @@ MoveList* legal_moves(Board *board) {
         while (aux3 && !(aux2 & pins)) {
             aux4 = pop_lsb(&aux3);
             if ((aux4 & push_mask) || (aux4 & capture_mask))
-                push_move(list, new_move(LOG2(aux2), LOG2(aux4), aux4 & enemy ? 4 : 0));
+                *(list++) = new_move(LOG2(aux2), LOG2(aux4), aux4 & enemy ? 4 : 0);
         }
     }
     
@@ -506,7 +506,7 @@ MoveList* legal_moves(Board *board) {
         while (aux3) {
             aux4 = pop_lsb(&aux3);
             if ((aux4 & push_mask) || (aux4 & capture_mask))
-                push_move(list, new_move(LOG2(aux2), LOG2(aux4), aux4 & enemy ? 4 : 0));
+                *(list++) = new_move(LOG2(aux2), LOG2(aux4), aux4 & enemy ? 4 : 0);
         }
     }
     
@@ -526,7 +526,7 @@ MoveList* legal_moves(Board *board) {
         while (aux3) {
             aux4 = pop_lsb(&aux3);
             if ((aux4 & push_mask) || (aux4 & capture_mask))
-                push_move(list, new_move(LOG2(aux2), LOG2(aux4), aux4 & enemy ? 4 : 0));
+                *(list++) = new_move(LOG2(aux2), LOG2(aux4), aux4 & enemy ? 4 : 0);
         }
     }
     
@@ -548,11 +548,12 @@ MoveList* legal_moves(Board *board) {
         while (aux3) {
             aux4 = pop_lsb(&aux3);
             if ((aux4 & push_mask) || (aux4 & capture_mask))
-                push_move(list, new_move(LOG2(aux2), LOG2(aux4), aux4 & enemy ? 4 : 0));
+                *(list++) = new_move(LOG2(aux2), LOG2(aux4), aux4 & enemy ? 4 : 0);
         }
     }
     
 end:
+    *list = 0;
     return list;
 }
 
@@ -608,8 +609,8 @@ U64 perft(Board *board, int depth) {
 #if DEBUG
     Board *copy;
 #endif
-    MoveList* list = legal_moves(board);
-    Move curr_move = pop_move(list);
+    Move *curr = (Move[256]){0};
+    Move *end = legal_moves(board, curr);
     U64 nodes = 0;
 
     /*if (depth == 1) {
@@ -617,18 +618,18 @@ U64 perft(Board *board, int depth) {
         curr_move = 0;
     }*/
 
-    while (curr_move) {
+    while (curr < end) {
 #if DEBUG
         copy = copy_board(board);
 #endif
-        make_move(board, curr_move);
+        make_move(board, *curr);
         nodes += perft(board, depth-1);
-        unmake_move(board, curr_move);
+        unmake_move(board, *curr);
 #if DEBUG
         if (!boards_equal(board, copy)) {
             printf("\nMAKE MOVE != UNMAKE MOVE FOR:");
-            print_move(curr_move);
-            printf(" %lx\n", curr_move >> 12);
+            print_move(*curr);
+            printf(" %lx\n", *curr >> 12);
             print_board(copy);
             printf("\n");
             print_board(board);
@@ -636,10 +637,9 @@ U64 perft(Board *board, int depth) {
         }
         free_board(copy);
 #endif
-        curr_move = pop_move(list);
+        curr++;
     }
     
-    free_movelist(list);
     return nodes;
 }
 
@@ -649,27 +649,27 @@ void print_perft(Board *board, int depth) {
 #endif
     //clock_t start = clock(), end;
     //double duration;
-    MoveList* list = legal_moves(board);
-    Move curr_move = pop_move(list);
+    Move *curr = (Move[256]){0};
+    Move *end = legal_moves(board, curr);
     U64 total_nodes = 0;
     U64 curr_node = 0;
     
-    while (curr_move) {
+    while (curr < end) {
 #if DEBUG
         copy = copy_board(board);
 #endif
-        make_move(board, curr_move);
-        print_move(curr_move);
+        make_move(board, *curr);
+        print_move(*curr);
         printf(": ");
         curr_node = perft(board, depth-1);
         printf("%lu\n", curr_node);
         total_nodes += curr_node;
-        unmake_move(board, curr_move);
+        unmake_move(board, *curr);
 #if DEBUG
         if (!boards_equal(board, copy)) {
             printf("\nMAKE MOVE != UNMAKE MOVE FOR:");
-            print_move(curr_move);
-            printf(" %lx\n", curr_move >> 12);
+            print_move(*curr);
+            printf(" %lx\n", *curr >> 12);
             print_board(copy);
             printf("\n");
             print_board(board);
@@ -677,14 +677,12 @@ void print_perft(Board *board, int depth) {
         }
         free_board(copy);
 #endif
-        curr_move = pop_move(list);
+        curr++;
     }
     //end = clock();
     //duration = (double)(end - start) / CLOCKS_PER_SEC;
     //printf("\nTotal nodes: %lu (%d nps)\n", total_nodes, (int)(total_nodes / duration));
     printf("\nTotal nodes: %lu\n", total_nodes);
-
-    free_movelist(list);
 }
 
 
