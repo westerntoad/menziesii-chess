@@ -98,6 +98,12 @@ static void position(char** input) {
 static void go(char** input) {
     //char* pt;
 
+    if (**input == '\n') {
+        printf("bestmove ");
+        print_move(random_move(G_BOARD));
+        printf("\n");
+    }
+
     while (**input != '\n') {
         if (has(input, "perft")) {
             if (G_BOARD)

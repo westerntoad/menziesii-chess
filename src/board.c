@@ -553,8 +553,15 @@ Move* legal_moves(Board *board, Move *given) {
     }
     
 end:
-    *list = 0;
+    *list = (list - given);
     return list;
+}
+
+Move random_move(Board *board) {
+    Move *curr = (Move[256]){0};
+    Move *end = legal_moves(board, curr);
+    
+    return *(curr + (rand() % *end));
 }
 
 Move move_from_str(Board *board, char* str) {
@@ -613,10 +620,8 @@ U64 perft(Board *board, int depth) {
     Move *end = legal_moves(board, curr);
     U64 nodes = 0;
 
-    /*if (depth == 1) {
-        nodes = list->size;
-        curr_move = 0;
-    }*/
+    if (depth == 1)
+        return *end;
 
     while (curr < end) {
 #if DEBUG

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <time.h>
 #include "uci.h"
 #include "board.h"
 #include "movegen.h"
@@ -12,6 +13,7 @@
 
 int main(void) {
     char *str = (char*)malloc(MAX_STR_SIZE * sizeof(char));
+    srand(time(NULL));
 
     if (WIDE_PRINT) {
         setlocale(LC_CTYPE, ""); // used for unicode printing
