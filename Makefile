@@ -1,8 +1,8 @@
 # Compiler and flags
 CC = gcc
 CFLAGS = -Wall -Wextra -O2
-DEBUG_CFLAGS = -DDEBUG -g # Debug flag
-LDFLAGS = -lm  # Link math library (if needed)
+DEBUG_CFLAGS = -DDEBUG -g
+LDFLAGS = -lm
 
 # Directories
 SRC_DIR = src
@@ -22,60 +22,57 @@ EXEC = $(BIN_DIR)/menziesii
 TEST_EXEC = $(BIN_DIR)/test_menziesii
 
 # Target to build the main chessbot executable
-all: $(BIN_DIR) $(OBJ_DIR) $(EXEC)
+all: $(EXEC)
 
-# Create the bin and obj directories if they don't exist
+# Create directories if they don't exist
 $(BIN_DIR) $(OBJ_DIR):
 	mkdir -p $@
 
-# Main Chess Bot executable
-$(EXEC): $(OBJ_FILES) $(MAIN_OBJ)
+# Main executable
+$(EXEC): $(OBJ_FILES) $(MAIN_OBJ) | $(BIN_DIR)
 	$(CC) $(OBJ_FILES) $(MAIN_OBJ) -o $(EXEC) $(LDFLAGS)
 
-# Object files compilation rule
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+# Object files
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 # Compile main separately
-$(MAIN_OBJ): $(SRC_DIR)/main.c
+$(MAIN_OBJ): $(SRC_DIR)/main.c | $(OBJ_DIR)
 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
-# Target for unit tests
+# Unit tests
 tests: CFLAGS += $(DEBUG_CFLAGS)
 tests: $(TEST_EXEC)
 
-$(TEST_EXEC): $(OBJ_FILES) $(TEST_DIR)/test_chessbot.o
+$(TEST_EXEC): $(OBJ_FILES) $(TEST_DIR)/test_chessbot.o | $(BIN_DIR)
 	$(CC) $(OBJ_FILES) $(TEST_DIR)/test_chessbot.o -o $(TEST_EXEC) $(LDFLAGS)
 
-# Test object files compilation
+# Test object file
 $(TEST_DIR)/test_chessbot.o: $(TEST_DIR)/test_menziesii.c $(wildcard $(INCLUDE_DIR)/*.h)
 	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
-# Clean object and binary files
+# Clean
 clean:
 	rm -rf $(OBJ_DIR)/*.o $(EXEC) $(TEST_EXEC)
 
-# Debug build (with debug symbols)
+# Debug build
 debug: CFLAGS += $(DEBUG_CFLAGS)
 debug: clean all
 
-# Run unit tests
+# Run targets
 run: $(EXEC)
 	@./$(EXEC)
 
-# Run unit tests
 run-tests: tests
 	./$(TEST_EXEC)
 
 run-debug: debug
 	./$(EXEC)
 
-# Generate dependency files for automatic rebuild
+# Dependencies
 deps: $(OBJ_FILES:.o=.d)
 
-# Include dependency files
 -include $(OBJ_FILES:.o=.d)
 
-# Phony targets (not associated with files)
 .PHONY: all clean debug tests run run-tests deps
 
