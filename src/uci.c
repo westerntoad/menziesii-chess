@@ -1,8 +1,9 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
-#include "uci.h"
 #include "board.h"
+#include "eval.h"
+#include "uci.h"
 #include "utils.h" // includes <stdio.h>
 
 #define IDENTIFY_STR "id name Menziesii\nid author Abraham Engebretson\n"
@@ -56,6 +57,26 @@ static int has(char** input, char* word) {
     return 0;
 }
 
+static void print_pv(PrincipleVariation *pv) {
+    printf("info depth %d score ", pv->max_depth);
+    if (pv->is_mate) {
+        printf("mate %d", pv->depth);
+    } else {
+        printf("cp %d", pv->score);
+    }
+
+    if (pv->depth > 0) {
+        printf(" pv");
+
+        for (int i = 0; i < pv->depth; i++) {
+            printf(" ");
+            print_move(pv->line[i]);
+        }
+    }
+
+    printf("\n");
+}
+
 static void position(char** input) {
     Move move;
     char* pt;
@@ -97,23 +118,32 @@ static void position(char** input) {
 
 static void go(char** input) {
     //char* pt;
-
-    if (**input == '\n') {
-        printf("bestmove ");
-        print_move(random_move(G_BOARD));
-        printf("\n");
-    }
+    int depth = 0;
 
     while (**input != '\n') {
         if (has(input, "perft")) {
             if (G_BOARD)
                 print_perft(G_BOARD, atoi(next_token(input)));
 
-            break;
-        } else {
-            consume_token(input);
+            return;
+        } else if (has(input, "random")) {
+            if (G_BOARD) {
+                printf("bestmove ");
+                print_move(random_move(G_BOARD));
+                printf("\n");
+            }
+
+            return;
+        } else if (has(input, "depth")) {
+            depth = atoi(next_token(input));
         }
     }
+
+    PrincipleVariation *pv = start_eval(G_BOARD, depth);
+    print_pv(pv);
+    printf("bestmove ");
+    print_move(pv->line[0]);
+    printf("\n");
 }
 
 int uci(void) {
@@ -156,3 +186,5 @@ int uci(void) {
     
     return 0;
 }
+
+

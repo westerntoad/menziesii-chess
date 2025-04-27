@@ -18,6 +18,7 @@ typedef struct {
 void make_move(Board *board, Move move);
 void unmake_move(Board *board, Move move);
 Move* legal_moves(Board *board, Move *list);
+bool is_in_check(Board *board);
 Move random_move(Board *board);
 Move move_from_str(Board *board, char* str);
 U64 perft(Board *board, int depth);

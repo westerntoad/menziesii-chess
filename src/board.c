@@ -557,6 +557,10 @@ end:
     return list;
 }
 
+bool is_in_check(Board *board) {
+    return get_checkers(board, board->side_to_move) != 0;
+}
+
 Move random_move(Board *board) {
     Move *curr = (Move[256]){0};
     Move *end = legal_moves(board, curr);
