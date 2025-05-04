@@ -28,35 +28,27 @@ PrincipleVariation eval(Board *board, int depth) {
         Move *curr = (Move[256]){0};
         Move *end = legal_moves(board, curr);
 
-        /*if (curr == end) {
+        if (curr == end) {
+            pv.depth = 0;
             if (is_in_check(board)) {
                 // mate
-                return CHECKMATE_CP * side_coeff*(-1);
+                pv.is_mate = true;
+                pv.score = CHECKMATE_CP * side_coeff;
             } else {
                 // stalemate
-                return 0;
+printf("RECOGNIZE STALEMATE\n");
+                pv.score = 0;
             }
-        }*/
+            return pv;
+        }
 
         make_move(board, *curr);
         PrincipleVariation delta_pv = eval(board, depth-1);
         pv.score = delta_pv.score;
         pv.line[0] = *curr;
         memcpy(pv.line + 1, delta_pv.line, (MAX_DEPTH - 1) * sizeof(Move)); // maybe correct?
-        /*if (move_val * side_coeff*(-1) == CHECKMATE_CP) {
-            pv->depth = pv->max_depth;// TODO CHANGE
-            pv->is_mate = true;
-        } else {
-            pv->depth = pv->max_depth;
-            pv->is_mate = false;
-        }*/
-/*printf("\n\nLINE: ");
-for (int i = 0; i < pv->depth; i++) {
-    print_move(pv->line[i]);
-    printf(" ");
-}
-printf("\n");
-print_board(board);*/
+        pv.is_mate = delta_pv.is_mate;
+        pv.depth = delta_pv.depth + 1;
         unmake_move(board, *curr);
         curr++;
         while (curr < end) {
@@ -65,14 +57,9 @@ print_board(board);*/
             if (delta_pv.score * side_coeff*(-1) > pv.score) {
                 pv.line[0] = *curr;
                 memcpy(pv.line + 1, delta_pv.line, (MAX_DEPTH - 1) * sizeof(Move)); // maybe correct?
+                pv.is_mate = delta_pv.is_mate;
+                pv.depth = delta_pv.depth + 1;
 
-                /*if (move_val * side_coeff*(-1) == CHECKMATE_CP) {
-                    pv->depth = pv->max_depth;// TODO CHANGE
-                    pv->is_mate = true;
-                } else {
-                    pv->depth = pv->max_depth;
-                    pv->is_mate = false;
-                }*/
             }
 
             unmake_move(board, *curr);

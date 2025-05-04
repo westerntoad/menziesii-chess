@@ -16,6 +16,14 @@ typedef enum {
 
 static Board *G_BOARD;
 
+static const int NUM_TEST_FENS = 4;
+static char *TEST_FENS[] = {
+    "k7/8/8/8/8/8/8/7K w - - 0 1",
+    "k7/4R3/4PR2/5P2/8/8/8/7K w - - 0 1",
+    "k7/8/6b1/8/5b2/4b3/8/7K b - - 0 1",
+    "8/p2B2B1/p7/p7/p7/p7/pr6/k6K w - - 0 1"
+};
+
 static char* next_token(char** input) {
     char* pt = *input;
 
@@ -79,6 +87,7 @@ static void print_pv(PrincipleVariation *pv) {
 
 static void position(char** input) {
     Move move;
+    char buff[64];
     char* pt;
     int i;
     int state = 0;
@@ -87,11 +96,16 @@ static void position(char** input) {
         free_board(G_BOARD);
 
     while (**input != '\n') {
+        for (i = 0; i < NUM_TEST_FENS && state == 0; i++) {
+            snprintf(buff, 64, "%d", i+1);
+            if (has(input, buff)) {
+                G_BOARD = from_fen(TEST_FENS[i]);
+                state = 1;
+            }
+        }
+
         if (has(input, "startpos") && state == 0) {
             G_BOARD = from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-            state = 1;
-        } else if (has(input, "evalt1") && state == 0) {
-            G_BOARD = from_fen("k7/8/8/8/8/8/8/7K w - - 0 1");
             state = 1;
         } else if (has(input, "fen")) {
             pt = *input;
