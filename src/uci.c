@@ -58,7 +58,7 @@ static int has(char** input, char* word) {
 }
 
 static void print_pv(PrincipleVariation *pv) {
-    printf("info depth %d score ", pv->max_depth);
+    printf("info depth %d score ", pv->depth);
     if (pv->is_mate) {
         printf("mate %d", pv->depth);
     } else {
@@ -89,6 +89,9 @@ static void position(char** input) {
     while (**input != '\n') {
         if (has(input, "startpos") && state == 0) {
             G_BOARD = from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+            state = 1;
+        } else if (has(input, "evalt1") && state == 0) {
+            G_BOARD = from_fen("k7/8/8/8/8/8/8/7K w - - 0 1");
             state = 1;
         } else if (has(input, "fen")) {
             pt = *input;
@@ -139,10 +142,10 @@ static void go(char** input) {
         }
     }
 
-    PrincipleVariation *pv = start_eval(G_BOARD, depth);
-    print_pv(pv);
+    PrincipleVariation pv = eval(G_BOARD, depth);
+    print_pv(&pv);
     printf("bestmove ");
-    print_move(pv->line[0]);
+    print_move(pv.line[0]);
     printf("\n");
 }
 

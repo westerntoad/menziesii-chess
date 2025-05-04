@@ -1,15 +1,14 @@
+#include <string.h>
 #include "eval.h"
 #include "utils.h"
 #include "types.h"
 
-#define MAX_DEPTH 20
-
-void free_pv(PrincipleVariation *pv) {
+/*void free_pv(PrincipleVariation *pv) {
     free(pv->line);
     free(pv);
-}
+}*/
 
-PrincipleVariation *start_eval(Board *board, int depth) {
+/*PrincipleVariation *start_eval(Board *board, int depth) {
     PrincipleVariation *pv = malloc(sizeof(PrincipleVariation));
     pv->line = calloc(depth, sizeof(Move));
     pv->is_mate = false;
@@ -17,15 +16,19 @@ PrincipleVariation *start_eval(Board *board, int depth) {
     pv->score = eval(board, pv, depth);
 
     return pv;
-}
+}*/
 
-int eval(Board *board, PrincipleVariation *pv, int depth) {
+PrincipleVariation eval(Board *board, int depth) {
     int side_coeff = (board->side_to_move * 2 - 1)*(-1);
+    PrincipleVariation pv;
+    memset(pv.line, 0, MAX_DEPTH * sizeof(Move));
+    pv.is_mate = false;
+    pv.depth = depth;
     if (depth > 0) {
         Move *curr = (Move[256]){0};
         Move *end = legal_moves(board, curr);
 
-        if (curr == end) {
+        /*if (curr == end) {
             if (is_in_check(board)) {
                 // mate
                 return CHECKMATE_CP * side_coeff*(-1);
@@ -33,51 +36,53 @@ int eval(Board *board, PrincipleVariation *pv, int depth) {
                 // stalemate
                 return 0;
             }
-        }
+        }*/
 
         make_move(board, *curr);
-        int move_val = eval(board, pv, depth-1);
-        int best_score = move_val;
-        pv->line[pv->max_depth - (depth - 1) - 1] = *curr;
-        if (move_val * side_coeff*(-1) == CHECKMATE_CP) {
+        PrincipleVariation delta_pv = eval(board, depth-1);
+        pv.score = delta_pv.score;
+        pv.line[0] = *curr;
+        memcpy(pv.line + 1, delta_pv.line, (MAX_DEPTH - 1) * sizeof(Move)); // maybe correct?
+        /*if (move_val * side_coeff*(-1) == CHECKMATE_CP) {
             pv->depth = pv->max_depth;// TODO CHANGE
             pv->is_mate = true;
         } else {
             pv->depth = pv->max_depth;
             pv->is_mate = false;
-        }
-printf("\n\nLINE: ");
+        }*/
+/*printf("\n\nLINE: ");
 for (int i = 0; i < pv->depth; i++) {
     print_move(pv->line[i]);
     printf(" ");
 }
 printf("\n");
-print_board(board);
+print_board(board);*/
         unmake_move(board, *curr);
         curr++;
         while (curr < end) {
             make_move(board, *curr);
-            int move_val = eval(board, pv, depth-1);
-            if (move_val * side_coeff*(-1) > best_score) {
-                pv->line[pv->max_depth - (depth - 1) - 1] = *curr;
+            delta_pv = eval(board, depth-1);
+            if (delta_pv.score * side_coeff*(-1) > pv.score) {
+                pv.line[0] = *curr;
+                memcpy(pv.line + 1, delta_pv.line, (MAX_DEPTH - 1) * sizeof(Move)); // maybe correct?
 
-                if (move_val * side_coeff*(-1) == CHECKMATE_CP) {
+                /*if (move_val * side_coeff*(-1) == CHECKMATE_CP) {
                     pv->depth = pv->max_depth;// TODO CHANGE
                     pv->is_mate = true;
                 } else {
                     pv->depth = pv->max_depth;
                     pv->is_mate = false;
-                }
+                }*/
             }
 
             unmake_move(board, *curr);
             curr++;
         }
-
-        return best_score;
+    } else {
+        pv.score = piece_eval(board);
     }
 
-    return piece_eval(board);
+    return pv;
 }
 
 int piece_eval(Board *board) {
