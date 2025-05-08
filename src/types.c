@@ -3,6 +3,10 @@
 
 #define INITIAL_MOVELIST_CAPACITY 25
 
+Sq flip_v(Sq sq) {
+    return (sq % 8) + (7 - (sq / 8)) * 8;
+}
+
 void print_sq(Sq sq) {
     printf("%c%d", 0x61 + (sq%8), sq/8 + 1);
 }

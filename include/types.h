@@ -121,9 +121,10 @@ int push_move(MoveList *list, Move move);
 Move pop_move(MoveList *list);
 void print_movelist(MoveList *list);
 
+Sq flip_v(Sq sq);
+Sq sq_from_str(char *s);
 void print_sq(Sq sq);
 void wprint_sq(Sq sq);
-Sq sq_from_str(char *s);
 
 Move new_move(Sq from, Sq to, MoveFlags flags);
 Sq get_from(Move move);
