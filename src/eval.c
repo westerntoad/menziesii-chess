@@ -104,7 +104,8 @@ PrincipleVariation eval(Board *board, int depth) {
             if (is_in_check(board)) {
                 // mate
                 pv.is_mate = true;
-                pv.score = CHECKMATE_CP * side_coeff;
+                pv.score = CHECKMATE_CP * side_coeff*(-1);
+//printf("RECOGNIZE CHECKMATE (sc=%d)\n", pv.score);
             } else {
                 // stalemate
 //printf("RECOGNIZE STALEMATE\n");
@@ -129,7 +130,7 @@ printf("\nScore = %d\n\n", pv.score);*/
             delta_pv = eval(board, depth-1);
 /*print_board(board);
 printf("\nScore = %d\n\n", delta_pv.score);*/
-            if ((board->side_to_move == WHITE && delta_pv.score < pv.score) || (delta_pv.score > pv.score)) {
+            if ((board->side_to_move == WHITE && delta_pv.score < pv.score) || (board->side_to_move == BLACK && delta_pv.score > pv.score)) {
                 /*printf("\n");
                 print_move(*curr);
                 printf("(sc=%d) > ", delta_pv.score);

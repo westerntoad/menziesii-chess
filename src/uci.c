@@ -18,10 +18,10 @@ static Board *G_BOARD;
 
 static const int NUM_TEST_FENS = 4;
 static char *TEST_FENS[] = {
-    "k7/8/8/8/8/8/8/7K w - - 0 1",
-    "k7/4R3/4PR2/5P2/8/8/8/7K w - - 0 1",
-    "k7/8/6b1/8/5b2/4b3/8/7K b - - 0 1",
-    "8/p2B2B1/p7/p7/p7/p7/pr6/k6K w - - 0 1"
+    "k7/8/8/8/8/8/8/7K w - - 0 1", // X
+    "k7/4R3/4PR2/5P2/8/8/8/7K w - - 0 1", // X
+    "k7/8/6b1/8/5b2/4b3/8/7K b - - 0 1", // X
+    "8/p2B2B1/p7/p7/p7/p7/pr6/k6K w - - 0 1" // X
 };
 
 static char* next_token(char** input) {
@@ -68,7 +68,7 @@ static int has(char** input, char* word) {
 static void print_pv(PrincipleVariation *pv) {
     printf("info depth %d score ", pv->depth);
     if (pv->is_mate) {
-        printf("mate %d", pv->depth);
+        printf("mate %d", ((pv->depth + 1) / 2) * (G_BOARD->side_to_move * (-2) + 1)); // TODO remove -1
     } else {
         printf("cp %d", pv->score);
     }
