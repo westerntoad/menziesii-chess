@@ -197,13 +197,14 @@ static void test_mates() {
     // MATES IN 1
     assert_mate("k7/4R3/4PR2/5P2/8/8/8/7K w - - 0 1", 1);
     assert_mate("k7/8/6b1/8/5b2/4b3/8/7K b - - 0 1", 1);
-    assert_mate("8/8/8/2P3R1/5B2/2rP4/pQP1pP2/Rn2K2k w Q - 0 4", 1);
-    //assert_mate("r1bqkbnr/1ppp1ppp/p1n5/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 0 4", 1);
+    assert_mate("r1bqkbnr/1ppp1ppp/p1n5/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 0 4", 1);
 
     // MATES IN 2
     assert_mate("kbK5/pp6/1P6/8/8/8/8/R7 w - - 0 1", 3);
-
-
+    assert_mate("8/8/8/2P3R1/5B2/2rP1p2/p1P1PP2/RnQ1K2k w Q - 5 3", 3);
+    assert_mate("8/8/2Q5/3B4/1K6/2P5/Nk6/2R5 w - - 0 1", 4);
+    assert_mate("5B2/8/K7/8/kpp5/7R/8/1B6 w - - 0 1", 4);
+    //assert_mate("", 4);
 
     //assert_mate("", 0);
 }
