@@ -11,18 +11,12 @@
 
 #define MAX_STR_SIZE 128
 
-typedef enum {
-    INF,
-    DEPTH
-} SearchType;
+volatile int STOP_SEARCH;
 
-typedef enum {
-    INITIAL_STATE
-} UCIState;
+static pthread_t SEARCH_THREAD;
 
 static Board *G_BOARD;
 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static const int NUM_TEST_FENS = 4;
 static char *TEST_FENS[] = {
@@ -153,13 +147,17 @@ static void* search(void* arg) {
         pv = eval(board, curr_depth);
         print_pv(&pv);
         
-    } while (depth < 0 || (curr_depth < depth) /* TODO given stop command */);
+    } while ((depth < 0 || (curr_depth < depth)) && !STOP_SEARCH);
 
+    printf("bestmove ");
+    print_move(pv.line[0]);
+    printf("\n");
 
     free(board);
-    PrincipleVariation* heap_pv = malloc(sizeof(PrincipleVariation));
+    /*PrincipleVariation* heap_pv = malloc(sizeof(PrincipleVariation));
     *heap_pv = pv;
-    return heap_pv;
+    return heap_pv;*/
+    return NULL;
 }
 
 static void go(char** input) {
@@ -185,21 +183,17 @@ static void go(char** input) {
         }
     }
 
-    PrincipleVariation* pv;
-    pthread_t search_thread;
-    pthread_create(&search_thread, NULL, search, &depth);
-    pthread_join(search_thread, (void**)&pv);
-    printf("bestmove ");
-    print_move(pv->line[0]);
-    printf("\n");
-    free(pv);
+    pthread_create(&SEARCH_THREAD, NULL, search, &depth);
 }
 
 static void stop() {
-    
+    STOP_SEARCH = 1;
+    pthread_join(SEARCH_THREAD, NULL);
+    STOP_SEARCH = 0;
 }
 
 int uci(void) {
+    STOP_SEARCH = 0;
     char *str = (char*)malloc(MAX_STR_SIZE * sizeof(char));
     G_BOARD = NULL;
 
