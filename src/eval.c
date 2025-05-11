@@ -4,6 +4,12 @@
 #include "types.h"
 
 extern volatile int STOP_SEARCH;
+extern U64 NUM_NODES;
+
+const int PIECE_VALUES[] = {
+    PAWN_CP, KNIGHT_CP, BISHOP_CP,
+    ROOK_CP, QUEEN_CP, 0
+};
 
 // All tables were taken from:
 // https://www.chessprogramming.org/Simplified_Evaluation_Function#Piece-Square_Tables
@@ -82,9 +88,14 @@ PrincipleVariation eval(Board *board, int depth) {
     memset(pv.line, 0, MAX_DEPTH * sizeof(Move));
     pv.is_mate = false;
     pv.depth = depth;
+
+    NUM_NODES++;
+
     if (depth > 0) {
         Move *curr = (Move[256]){0};
         Move *end = legal_moves(board, curr);
+
+        //NUM_NODES += end - curr;
 
         if (curr == end) {
             pv.depth = 0;
@@ -124,33 +135,13 @@ PrincipleVariation eval(Board *board, int depth) {
             curr++;
         }
     } else {
-        pv.score = piece_eval(board) + piece_loc_eval(board);
+        pv.score = piece_eval(board);
     }
 
     return pv;
 }
 
 int piece_eval(Board *board) {
-    int i, val = 0;
-    int side = 0;
-    U64 color;
-    
-    for (i = 1; i >= -1; i -= 2) {
-        color = board->colors[side];
-
-        val += i * POP_COUNT(board->pieces[PAWN_IDX] & color) * PAWN_CP;
-        val += i * POP_COUNT(board->pieces[KNIGHT_IDX] & color) * KNIGHT_CP;
-        val += i * POP_COUNT(board->pieces[BISHOP_IDX] & color) * BISHOP_CP;
-        val += i * POP_COUNT(board->pieces[ROOK_IDX] & color) * ROOK_CP;
-        val += i * POP_COUNT(board->pieces[QUEEN_IDX] & color) * QUEEN_CP;
-        
-        side++;
-    }
-
-    return val;
-}
-
-int piece_loc_eval(Board *board) {
     int i, j, side = 0, val = 0;
     U64 bb, color;
     Sq pc;
@@ -164,7 +155,7 @@ int piece_loc_eval(Board *board) {
                 pc = LOG2(pop_lsb(&bb));
                 if (i == 1) // don't ask
                     pc = flip_v(pc);
-                val += PIECE_SQUARE_TABLE[j][pc] * i;
+                val += (PIECE_SQUARE_TABLE[j][pc] + PIECE_VALUES[j]) * i;
             }
         }
 

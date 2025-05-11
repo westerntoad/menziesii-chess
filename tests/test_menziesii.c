@@ -64,20 +64,6 @@ static void assert_perft(char* fen, int depth, U64 expected) {
     free(board);
 }
 
-static void assert_piece_eval(char* fen, int expected_eval) {
-    Board *board = from_fen(fen);
-    int actual = piece_eval(board);
-    TESTS_RUN++;
-    
-    if (expected_eval != actual) {
-        printf("PIECE EVAL ASSERTION FAILED\nFEN       %s\nEXPECTED  %d\nACTUAL    %d\n", fen, expected_eval, actual);
-    } else {
-        TESTS_PASSED++;
-    }
-    
-    free(board);
-}
-
 static void assert_eval(char* fen, int depth, int upper_bound, int lower_bound) {
     Board *board = from_fen(fen);
     int actual = eval(board, depth).score;
@@ -175,16 +161,6 @@ static void test_perfts() {
     }
 }
 
-static void test_piece_eval() {
-    printf("Testing piece evals...\n");
-
-    assert_piece_eval("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 0);
-    assert_piece_eval("8/1k2p3/3p4/8/8/8/2K3P1/8 w - - 0 1", -100);
-    assert_piece_eval("8/p7/3R4/3pB3/3Pk1p1/1P3p2/P5r1/5K2 b - - 11 42", 200);
-    assert_piece_eval("3k4/7r/6q1/8/2K5/8/8/8 w - - 0 1", -1400);
-    assert_piece_eval("rnb1kb1r/ppp1pppp/8/q2n4/8/5N2/PPPP1PPP/R1BQKB1R w KQkq - 0 6", -300);
-}
-
 static void test_eval() {
     printf("Testing general evals...\n");
     
@@ -217,7 +193,6 @@ int main(void) {
     test_pawns();
     test_sliders();
     test_perfts();
-    test_piece_eval();
     test_eval();
     test_mates();
 

@@ -20,12 +20,7 @@ typedef struct {
     int score;
 } PrincipleVariation;
 
-//PrincipleVariation *start_eval(Board *board, int depth);
 PrincipleVariation eval(Board *board, int depth);
 int piece_eval(Board *board);
-int piece_loc_eval(Board *board);
-
-//void free_pv(PrincipleVariation *pv);
-
 
 #endif // EVAL_H

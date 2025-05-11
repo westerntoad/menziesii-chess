@@ -1,7 +1,9 @@
 #include <ctype.h>
+#include <math.h>
 #include <pthread.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 #include "board.h"
 #include "eval.h"
 #include "uci.h"
@@ -13,10 +15,11 @@
 
 volatile int STOP_SEARCH;
 
+U64 NUM_NODES;
+
 static pthread_t SEARCH_THREAD;
 
 static Board *G_BOARD;
-
 
 static const int NUM_TEST_FENS = 4;
 static char *TEST_FENS[] = {
@@ -67,7 +70,7 @@ static int has(char** input, char* word) {
     return 0;
 }
 
-static void print_pv(PrincipleVariation *pv) {
+static void print_pv(PrincipleVariation *pv, double time) {
     printf("info depth %d score ", pv->depth);
     if (pv->is_mate) {
         printf("mate %d", ((pv->depth + 1) / 2) * (G_BOARD->side_to_move * (-2) + 1)); // TODO remove -1
@@ -82,6 +85,15 @@ static void print_pv(PrincipleVariation *pv) {
             printf(" ");
             print_move(pv->line[i]);
         }
+    }
+
+    if (NUM_NODES > 0) {
+        printf(" nodes %lu", NUM_NODES);
+    }
+
+    if (time != 0) {
+        printf(" nps %.0lf", (double)(NUM_NODES / time));
+        printf(" time %.0lf", time * 1000);
     }
 
     printf("\n");
@@ -138,19 +150,36 @@ static void position(char** input) {
 static void* search(void* arg) {
     Board *board = copy_board(G_BOARD);
     PrincipleVariation pv;
+    PrincipleVariation new_pv;
     int depth = *(int*)arg;
     int curr_depth = 0;
+    clock_t start, end;
 
     do {
         curr_depth++;
+        if (curr_depth > 1) {
+            pv = new_pv;
+            print_pv(&pv, (double)(end - start) / CLOCKS_PER_SEC);
+        }
 
-        pv = eval(board, curr_depth);
-        print_pv(&pv);
+        NUM_NODES = 0;
+        start = clock();
+        new_pv = eval(board, curr_depth);
+        end = clock();
         
     } while ((depth < 0 || (curr_depth < depth)) && !STOP_SEARCH);
 
+    if (!STOP_SEARCH || curr_depth <= 1) {
+        pv = new_pv;
+        print_pv(&pv, (double)(end - start) / CLOCKS_PER_SEC);
+    }
+
     printf("bestmove ");
     print_move(pv.line[0]);
+    if (pv.depth > 1) {
+        printf(" ponder ");
+        print_move(pv.line[1]);
+    }
     printf("\n");
 
     free(board);
