@@ -25,6 +25,7 @@ U64 perft(Board *board, int depth);
 void print_perft(Board *board, int depth);
 Board* from_fen(char* fen);
 void free_board(Board *board);
+Board* copy_board(Board *board);
 void print_board(Board *board);
 void print_board_bb(Board *board);
 void wprint_board(Board *board);

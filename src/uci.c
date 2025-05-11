@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <pthread.h>
 #include <string.h>
 #include <stdlib.h>
 #include "board.h"
@@ -11,10 +12,17 @@
 #define MAX_STR_SIZE 128
 
 typedef enum {
+    INF,
+    DEPTH
+} SearchType;
+
+typedef enum {
     INITIAL_STATE
 } UCIState;
 
 static Board *G_BOARD;
+
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static const int NUM_TEST_FENS = 4;
 static char *TEST_FENS[] = {
@@ -133,9 +141,30 @@ static void position(char** input) {
     }
 }
 
+static void* search(void* arg) {
+    Board *board = copy_board(G_BOARD);
+    PrincipleVariation pv;
+    int depth = *(int*)arg;
+    int curr_depth = 0;
+
+    do {
+        curr_depth++;
+
+        pv = eval(board, curr_depth);
+        print_pv(&pv);
+        
+    } while (depth < 0 || (curr_depth < depth) /* TODO given stop command */);
+
+
+    free(board);
+    PrincipleVariation* heap_pv = malloc(sizeof(PrincipleVariation));
+    *heap_pv = pv;
+    return heap_pv;
+}
+
 static void go(char** input) {
     //char* pt;
-    int depth = 0;
+    int depth = -1;
 
     while (**input != '\n') {
         if (has(input, "perft")) {
@@ -156,11 +185,18 @@ static void go(char** input) {
         }
     }
 
-    PrincipleVariation pv = eval(G_BOARD, depth);
-    print_pv(&pv);
+    PrincipleVariation* pv;
+    pthread_t search_thread;
+    pthread_create(&search_thread, NULL, search, &depth);
+    pthread_join(search_thread, (void**)&pv);
     printf("bestmove ");
-    print_move(pv.line[0]);
+    print_move(pv->line[0]);
     printf("\n");
+    free(pv);
+}
+
+static void stop() {
+    
 }
 
 int uci(void) {
@@ -183,6 +219,9 @@ int uci(void) {
                 break;
             } else if (has(&str, "go")) {
                 go(&str);
+                break;
+            } else if (has(&str, "stop")) {
+                stop();
                 break;
             } else if (has(&str, "quit")) {
                 //free(str); // TODO fix

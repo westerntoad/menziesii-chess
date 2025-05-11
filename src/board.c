@@ -10,8 +10,7 @@
 #define INITIAL_MOVE_CAPACITY 500
 #define HALF_MOVE_MASK 0x1ffff
 
-#if DEBUG
-static Board* copy_board(Board *board) { // DEBUG
+Board* copy_board(Board *board) { // DEBUG
     int i;
     Board *copy = (Board*)malloc(sizeof(Board));
     memset(copy, 0, sizeof(Board));
@@ -33,6 +32,7 @@ static Board* copy_board(Board *board) { // DEBUG
     return copy;
 }
 
+#if DEBUG
 static bool boards_equal(Board *b1, Board *b2) { // DEBUG
     int i;
 
