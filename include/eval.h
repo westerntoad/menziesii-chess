@@ -9,8 +9,6 @@
 #define ROOK_CP   500
 #define QUEEN_CP  900
 
-#define CHECKMATE_CP (2 << 15)
-
 #define MAX_DEPTH 20
 
 typedef struct {
