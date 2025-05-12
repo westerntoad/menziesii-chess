@@ -11,7 +11,7 @@
 
 #define IDENTIFY_STR "id name Menziesii\nid author Abraham Engebretson\n"
 
-#define MAX_STR_SIZE 128
+#define MAX_STR_SIZE 2<<15
 
 volatile int STOP_SEARCH;
 
@@ -210,9 +210,14 @@ static void go(char** input) {
             return;
         } else if (has(input, "depth")) {
             depth = atoi(next_token(input));
+        } else {
+            consume_token(input);
         }
     }
 
+    /*printf("bestmove ");
+    print_move(random_move(G_BOARD));
+    printf("\n");*/
     pthread_create(&SEARCH_THREAD, NULL, search, &depth);
 }
 
@@ -228,7 +233,7 @@ int uci(void) {
     G_BOARD = NULL;
 
     printf(IDENTIFY_STR);
-    printf("uciok\n");
+    printf("\nuciok\n");
     while (1) {
         if (fgets(str, MAX_STR_SIZE, stdin) == NULL) {
             return -1;
