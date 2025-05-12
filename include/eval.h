@@ -16,6 +16,8 @@ typedef struct {
     bool is_mate;
     int depth;
     int score;
+    int alpha;
+    int beta;
 } PrincipleVariation;
 
 PrincipleVariation eval(Board *board, int depth);

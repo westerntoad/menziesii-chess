@@ -130,6 +130,7 @@ Move new_move(Sq from, Sq to, MoveFlags flags);
 Sq get_from(Move move);
 Sq get_to(Move move);
 bool is_promotion(Move move);
+bool is_capture(Move move);
 void print_move(Move move);
 void wprint_move(Move move);
 

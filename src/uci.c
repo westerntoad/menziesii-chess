@@ -21,12 +21,13 @@ static pthread_t SEARCH_THREAD;
 
 static Board *G_BOARD;
 
-static const int NUM_TEST_FENS = 4;
+static const int NUM_TEST_FENS = 5;
 static char *TEST_FENS[] = {
     "k7/8/8/8/8/8/8/7K w - - 0 1", // X
     "k7/4R3/4PR2/5P2/8/8/8/7K w - - 0 1", // X
     "k7/8/6b1/8/5b2/4b3/8/7K b - - 0 1", // X
-    "8/p2B2B1/p7/p7/p7/p7/pr6/k6K w - - 0 1" // X
+    "8/p2B2B1/p7/p7/p7/p7/pr6/k6K w - - 0 1", // X
+    "r1bqkb1r/pppppppp/2n2n2/1N6/8/8/PPPPPPPP/R1BQKBNR w KQkq - 4 3"
 };
 
 static char* next_token(char** input) {

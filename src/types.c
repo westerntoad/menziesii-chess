@@ -35,6 +35,10 @@ bool is_promotion(Move move) {
     return move & 0x8000;
 }
 
+bool is_capture(Move move) {
+    return ((move>>12) & 0b1110) == 0b0100;
+}
+
 void print_move(Move move) {
     if (move == 0) {
         printf("0000");

@@ -83,7 +83,43 @@ static const int PIECE_SQUARE_TABLE[NUM_PIECES + 1][NUM_SQUARES] = {
     }
 };
 
-PrincipleVariation eval(Board *board, int depth) {
+int quiesce(Board *board, int alpha, int beta) {
+    int score, best = piece_eval(board);
+
+    if (best >= beta)
+        return best;
+
+    if (best > alpha)
+        alpha = best;
+
+    Move *curr = (Move[256]){0};
+    Move *end = legal_moves(board, curr);
+
+    while (curr < end) {
+        if (!is_capture(*curr)) {
+            curr++;
+            continue;
+        }
+        make_move(board, *curr);
+        score = -quiesce(board, -beta, -alpha);
+        unmake_move(board, *curr);
+
+        if (score > best)
+            best = score;
+
+        if (best >= beta)
+            return best;
+
+        if (score > alpha)
+            alpha = score;
+
+        curr++;
+    }
+
+    return best;
+}
+
+PrincipleVariation negamax(Board *board, int alpha, int beta, int depth) {
     PrincipleVariation pv, child;
     pv.is_mate = false;
     pv.depth = depth;
@@ -91,8 +127,7 @@ PrincipleVariation eval(Board *board, int depth) {
     NUM_NODES++;
     
     if (depth == 0) {
-        pv.score = piece_eval(board);
-        return pv;
+        pv.score = quiesce(board, alpha, beta);
     } else {
         memset(pv.line, 0, MAX_DEPTH * sizeof(Move));
 
@@ -116,21 +151,31 @@ PrincipleVariation eval(Board *board, int depth) {
 
         while (curr < end && (depth < 3 || !STOP_SEARCH)) {
             make_move(board, *curr);
-            child = eval(board, depth-1);
+            child = negamax(board, -beta, -alpha, depth-1);
+            unmake_move(board, *curr);
             if (-child.score > pv.score) {
                 pv.score = -child.score;
                 pv.line[0] = *curr;
                 memcpy(pv.line + 1, child.line, (MAX_DEPTH - 1) * sizeof(Move)); // maybe correct?
                 pv.is_mate = child.is_mate;
                 pv.depth = child.depth + 1;
+                if (pv.score > alpha)
+                    alpha = pv.score;
             }
 
-            unmake_move(board, *curr);
+            if (pv.score >= beta) {
+                return pv;
+            }
+
             curr++;
         }
     }
     
     return pv;
+}
+
+PrincipleVariation eval(Board *board, int depth) {
+    return negamax(board, -INF, INF, depth);
 }
 
 int piece_eval(Board *board) {
