@@ -4,8 +4,7 @@
 #include "types.h"
 
 #define CHECKMATE_CP (2 << 15)
-#define POS_INF (2 << 16)
-#define NEG_INF (2 << 16)*(-1)
+#define INF (2 << 16)
 
 extern volatile int STOP_SEARCH;
 extern U64 NUM_NODES;
@@ -85,19 +84,18 @@ static const int PIECE_SQUARE_TABLE[NUM_PIECES + 1][NUM_SQUARES] = {
 };
 
 PrincipleVariation eval(Board *board, int depth) {
-    // WHITE: side_coeff = 1
-    // BLACK: side_coeff = -1
-    int side_coeff = (board->side_to_move * 2 - 1)*(-1);
-    PrincipleVariation pv;
-    PrincipleVariation delta_pv;
-    memset(pv.line, 0, MAX_DEPTH * sizeof(Move));
+    PrincipleVariation pv, child;
     pv.is_mate = false;
     pv.depth = depth;
-    pv.score = POS_INF*side_coeff*(-1);
 
     NUM_NODES++;
+    
+    if (depth == 0) {
+        pv.score = piece_eval(board);
+        return pv;
+    } else {
+        memset(pv.line, 0, MAX_DEPTH * sizeof(Move));
 
-    if (depth > 0) {
         Move *curr = (Move[256]){0};
         Move *end = legal_moves(board, curr);
 
@@ -106,7 +104,7 @@ PrincipleVariation eval(Board *board, int depth) {
             if (is_in_check(board)) {
                 // mate
                 pv.is_mate = true;
-                pv.score = CHECKMATE_CP * side_coeff*(-1);
+                pv.score = -CHECKMATE_CP;
             } else {
                 // stalemate
                 pv.score = 0;
@@ -114,28 +112,26 @@ PrincipleVariation eval(Board *board, int depth) {
             return pv;
         }
 
+        pv.score = -INF;
+
         while (curr < end && (depth < 3 || !STOP_SEARCH)) {
             make_move(board, *curr);
-            delta_pv = eval(board, depth-1);
-            if ((board->side_to_move == WHITE && delta_pv.score < pv.score) || (board->side_to_move == BLACK && delta_pv.score > pv.score)) {
-                pv.score = delta_pv.score;
+            child = eval(board, depth-1);
+            if (-child.score > pv.score) {
+                pv.score = -child.score;
                 pv.line[0] = *curr;
-                memcpy(pv.line + 1, delta_pv.line, (MAX_DEPTH - 1) * sizeof(Move)); // maybe correct?
-                pv.is_mate = delta_pv.is_mate;
-                pv.depth = delta_pv.depth + 1;
+                memcpy(pv.line + 1, child.line, (MAX_DEPTH - 1) * sizeof(Move)); // maybe correct?
+                pv.is_mate = child.is_mate;
+                pv.depth = child.depth + 1;
             }
 
             unmake_move(board, *curr);
             curr++;
         }
-    } else {
-        pv.score = piece_eval(board);
     }
-
+    
     return pv;
 }
-
-
 
 int piece_eval(Board *board) {
     int i, j, side = 0, val = 0;
@@ -158,5 +154,6 @@ int piece_eval(Board *board) {
         side++;
     }
 
-    return val;
+    // return the value relative to side to move (required for negamax)
+    return val * (board->side_to_move * 2 - 1)*(-1);
 }
