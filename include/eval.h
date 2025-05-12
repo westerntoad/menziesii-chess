@@ -22,5 +22,6 @@ typedef struct {
 
 PrincipleVariation eval(Board *board, int depth);
 int piece_eval(Board *board);
+void start_timer();
 
 #endif // EVAL_H

@@ -1,4 +1,6 @@
+#include <math.h>
 #include <string.h>
+#include <time.h>
 #include "eval.h"
 #include "utils.h"
 #include "types.h"
@@ -7,7 +9,9 @@
 #define INF (2 << 16)
 
 extern volatile int STOP_SEARCH;
+extern volatile int SEARCH_TIME;
 extern U64 NUM_NODES;
+struct timespec START_TIME, END_TIME;
 
 const int PIECE_VALUES[] = {
     PAWN_CP, KNIGHT_CP, BISHOP_CP,
@@ -167,11 +171,25 @@ PrincipleVariation negamax(Board *board, int alpha, int beta, int depth) {
                 return pv;
             }
 
+            if (depth >= 3 && SEARCH_TIME > 0) {
+                clock_gettime(CLOCK_MONOTONIC, &END_TIME);
+                double duration = (END_TIME.tv_sec - START_TIME.tv_sec);
+                duration += (END_TIME.tv_nsec - START_TIME.tv_nsec) / 1000000000.0;
+                //SEARCH_TIME -= (int)round(duration*1000);
+                if ((int)round(duration*1000) >= SEARCH_TIME) {
+                    STOP_SEARCH = 1; // TODO not atomic
+                }
+            }
+
             curr++;
         }
     }
     
     return pv;
+}
+
+void start_timer() {
+    clock_gettime(CLOCK_MONOTONIC, &START_TIME);
 }
 
 PrincipleVariation eval(Board *board, int depth) {

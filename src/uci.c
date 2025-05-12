@@ -14,6 +14,7 @@
 #define MAX_STR_SIZE 2<<15
 
 volatile int STOP_SEARCH;
+volatile int SEARCH_TIME;
 
 U64 NUM_NODES;
 
@@ -97,6 +98,8 @@ static void print_pv(PrincipleVariation *pv, double time) {
         printf(" time %.0lf", time * 1000);
     }
 
+    printf(" SEARCH_TIME=%d", SEARCH_TIME);
+
     printf("\n");
 }
 
@@ -156,6 +159,7 @@ static void* search(void* arg) {
     int curr_depth = 0;
     clock_t start, end;
 
+    start_timer();
     do {
         curr_depth++;
         if (curr_depth > 1) {
@@ -174,6 +178,7 @@ static void* search(void* arg) {
         pv = new_pv;
         print_pv(&pv, (double)(end - start) / CLOCKS_PER_SEC);
     }
+    STOP_SEARCH = 0;
 
     printf("bestmove ");
     print_move(pv.line[0]);
@@ -184,15 +189,13 @@ static void* search(void* arg) {
     printf("\n");
 
     free(board);
-    /*PrincipleVariation* heap_pv = malloc(sizeof(PrincipleVariation));
-    *heap_pv = pv;
-    return heap_pv;*/
     return NULL;
 }
 
 static void go(char** input) {
     //char* pt;
     int depth = -1;
+    SEARCH_TIME = 0;
 
     while (**input != '\n') {
         if (has(input, "perft")) {
@@ -208,6 +211,8 @@ static void go(char** input) {
             }
 
             return;
+        } else if (has(input, "movetime")) {
+            SEARCH_TIME = atoi(next_token(input));
         } else if (has(input, "depth")) {
             depth = atoi(next_token(input));
         } else {
@@ -215,16 +220,12 @@ static void go(char** input) {
         }
     }
 
-    /*printf("bestmove ");
-    print_move(random_move(G_BOARD));
-    printf("\n");*/
     pthread_create(&SEARCH_THREAD, NULL, search, &depth);
 }
 
 static void stop() {
     STOP_SEARCH = 1;
     pthread_join(SEARCH_THREAD, NULL);
-    STOP_SEARCH = 0;
 }
 
 int uci(void) {
