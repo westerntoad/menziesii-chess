@@ -27,4 +27,7 @@
 #define LOG2(x) __builtin_ctzll(x)
 #define POP_COUNT(x) __builtin_popcountll(x)
 
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
 #endif  // UTILS_H

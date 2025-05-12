@@ -195,6 +195,8 @@ static void* search(void* arg) {
 static void go(char** input) {
     //char* pt;
     int depth = -1;
+    int wtime=0, btime=0, winc=0, binc=0;
+    bool go_infinite = false;
     SEARCH_TIME = 0;
 
     while (**input != '\n') {
@@ -215,11 +217,28 @@ static void go(char** input) {
             SEARCH_TIME = atoi(next_token(input));
         } else if (has(input, "depth")) {
             depth = atoi(next_token(input));
+        } else if (has(input, "wtime")) {
+            wtime = atoi(next_token(input));
+        } else if (has(input, "btime")) {
+            btime = atoi(next_token(input));
+        } else if (has(input, "winc")) {
+            winc = atoi(next_token(input));
+        } else if (has(input, "binc")) {
+            binc = atoi(next_token(input));
+        } else if (has(input, "infinite")) {
+            go_infinite = true;
         } else {
             consume_token(input);
         }
     }
 
+    if (SEARCH_TIME == 0 && !go_infinite) {
+        if (G_BOARD->side_to_move == WHITE) {
+            SEARCH_TIME = MIN(1000, winc) + MIN(2000, wtime / 4);
+        } else {
+            SEARCH_TIME = MIN(1000, binc) + MIN(2000, btime / 4);
+        }
+    }
     pthread_create(&SEARCH_THREAD, NULL, search, &depth);
 }
 
