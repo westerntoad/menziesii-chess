@@ -12,9 +12,6 @@
 #define MAX_STR_SIZE 32
 
 // CHECK THESE
-// position startpos moves d2d4 g8f6 e2e3 e7e6 b1c3 f8e7 g1f3 e8g8 e3e4 d7d5 e4e5 f6e8 f1d3 c7c5 e1g1 b8c6 d4c5 e7c5 c3a4 c5e7 a4c3 e7b4 c3e2 d8c7 a2a3 b4a5 d3b5 c6e5 f3e5 c7e5 b5e8 f8e8 e2d4 a5b6 c1e3 f7f5 f1e1 e5f6 f2f4 g8h8 a3a4 g7g5 f4g5 f6g6 a4a5 b6d4 d1d4 h8g8 c2c4 e6e5 d4d5 g6e6 a1d1 f5f4 e3c1 e6d5 d1d5 c8e6 d5e5 g8f7 e5e6 e8e6 c1f4 e6e1
-// go depth 5
-
 // position startpos moves d2d4 d7d5 e2e3 c8f5 b1c3 e7e6 g2g4 f5g6 g1f3 g8f6 g4g5 f6e4 c3e4 d5e4 f3e5 b8c6 f1b5 d8d5 b5c6 b7c6 e1g1 f7f6 g5f6 g7f6 c2c4 d5d6 c4c5 d6d5 e5g6 h7g6 d1g4 g6g5 f2f3 h8h4 g4g3 f8d6 c5d6 c7d6 f3e4 d5e4 g3d6 h4g4 g1f2 g4g2 f2e1 a8d8 d6c5 e6e5 f1f6 g2g1 e1e2 g1g2
 
 // position fen 3rk3/p7/2p2R2/2Q1p1p1/3Pq3/4P3/PP5P/R1B1K1r1 w - - 1 26 moves e1e2 g1g2
@@ -38,6 +35,7 @@
 // add pondering
 // mobility score for individual pieces
 // resrict quiescent search depth
+// write README
 
 int main(void) {
     char *str = (char*)malloc(MAX_STR_SIZE * sizeof(char));

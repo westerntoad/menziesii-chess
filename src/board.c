@@ -797,6 +797,118 @@ Board* from_fen(char* fen) {
     return board;
 }
 
+char* to_fen(Board *board) {
+    char *ptr, *fen = malloc(sizeof(char) * 128);
+    char to_add;
+    int i, piece, color, gap = 0;
+    bool found;
+    U64 d_bb;
+    Sq sq;
+    StateFlags state = board->state_stack[board->ply];
+
+    ptr = fen;
+
+    for (i = 0; i < NUM_SQUARES; i++) {
+        d_bb = 1ULL << ((i%8) + (7-i/8)*8);
+        found = false;
+        for (color = 0; color < 2 && !found; color++) {
+            for (piece = 0; piece < NUM_PIECES && !found; piece++) {
+                if (board->colors[color] & board->pieces[piece] & d_bb) {
+                    found = true;
+                }
+            }
+        }
+        color--;
+        piece--;
+        if (found) {
+            if (gap) {
+                *ptr = gap+48;
+                gap = 0;
+                ptr++;
+            }
+
+            switch (piece) {
+                case PAWN_IDX:
+                    to_add = 'p';
+                    break;
+                case KNIGHT_IDX:
+                    to_add = 'n';
+                    break;
+                case BISHOP_IDX:
+                    to_add = 'b';
+                    break;
+                case ROOK_IDX:
+                    to_add = 'r';
+                    break;
+                case QUEEN_IDX:
+                    to_add = 'q';
+                    break;
+                case KING_IDX:
+                    to_add = 'k';
+                    break;
+                default:
+                    to_add = '?';
+            }
+            if (color == WHITE)
+                to_add = toupper(to_add);
+            
+            *ptr = to_add;
+            ptr++;
+        } else {
+            gap++;
+        }
+
+        if (i % 8 == 7) {
+            if (gap) {
+                *ptr = gap+48;
+                gap = 0;
+                ptr++;
+            }
+
+            if (i / 8 != 7)
+                *(ptr++) = '/';
+        }
+    }
+
+    *(ptr++) = ' ';
+    *(ptr++) = board->side_to_move == WHITE ? 'w' : 'b';
+    *(ptr++) = ' ';
+
+    found = false;
+    if (can_castle(board, WHITE, KINGSIDE)) {
+        found = true;
+        *(ptr++) = 'K';
+    }
+    if (can_castle(board, WHITE, QUEENSIDE)) {
+        found = true;
+        *(ptr++) = 'Q';
+    }
+    if (can_castle(board, BLACK, KINGSIDE)) {
+        found = true;
+        *(ptr++) = 'k';
+    }
+    if (can_castle(board, BLACK, QUEENSIDE)) {
+        found = true;
+        *(ptr++) = 'q';
+    }
+    if (!found)
+        *(ptr++) = '-';
+    
+    *(ptr++) = ' ';
+    if (TEST_BIT(state, 26)) {
+        sq = (state >> 20) & 0x3f;
+        *(ptr++) = 0x61+(sq%8);
+        *(ptr++) = sq/8+49;
+    } else {
+        *(ptr++) = '-';
+    }
+
+    sprintf(ptr, " %d %d", half_moves(board), (board->ply / 2) + 1);
+
+
+    return fen;
+}
+
 void free_board(Board *board) {
     free(board->state_stack);
     free(board);
@@ -827,6 +939,9 @@ void print_board(Board *board) {
     U64 bb;
     int i, j, k, c, color, piece;
     char castle_rights[5];
+    
+    printf("%s\n", to_fen(board));
+
     printf("           %c to move\n", board->side_to_move ? 'b' : 'w');
     printf("       ");
     for (i = 0; i < 8; i++) {
