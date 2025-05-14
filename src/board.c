@@ -432,7 +432,7 @@ Move* legal_moves(Board *board, Move *given) {
         aux3 = (curr_side ? sout_one(aux2) : nort_one(aux2)) & ~(enemy | friendly);
 
         if (aux2 & pins) // if pawn is pinned
-            aux3 &= r_moves(king, (friendly | enemy) & ~aux2);
+            aux3 &= v_moves(king, (friendly | enemy) & ~aux2);
 
         if (aux3 & (RANK_1 | RANK_8) & push_mask) { // if pawn promotion
             for (j = 0; j < 4; j++) {

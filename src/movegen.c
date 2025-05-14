@@ -31,11 +31,11 @@ static U64 k_moves_slow(U64 orig) {
     return attacks;
 }
 
-static U64 sliding_attacks(U64 orig, U64 blocks, const int dxes[], const int dyes[]) {
+static U64 sliding_attacks(U64 orig, U64 blocks, const int dxes[], const int dyes[], int length) {
     U64 dbb, attacks = 0ULL;
     int i;
 
-    for (i = 0; i < 4; i++) {
+    for (i = 0; i < length; i++) {
         dbb = orig;
         while (dbb) {
             dbb = delta_one(dbb, dxes[i], dyes[i]);
@@ -70,21 +70,28 @@ U64 r_moves(U64 orig, U64 blocks) {
     const int dxes[4] = { 0,  1,  0, -1 };
     const int dyes[4] = { 1,  0, -1,  0 };
 
-    return sliding_attacks(orig, blocks, dxes, dyes);
+    return sliding_attacks(orig, blocks, dxes, dyes, 4);
 }
 
 U64 b_moves(U64 orig, U64 blocks) {
     const int dxes[4] = { 1, -1,  1, -1 };
     const int dyes[4] = { 1,  1, -1, -1 };
 
-    return sliding_attacks(orig, blocks, dxes, dyes);
+    return sliding_attacks(orig, blocks, dxes, dyes, 4);
 }
 
 U64 h_moves(U64 orig, U64 blocks) {
     const int dxes[4] = { 0,  1 };
     const int dyes[4] = { 0, -1 };
 
-    return sliding_attacks(orig, blocks, dxes, dyes);
+    return sliding_attacks(orig, blocks, dxes, dyes, 2);
+}
+
+U64 v_moves(U64 orig, U64 blocks) {
+    const int dxes[2] = { 0,  0 };
+    const int dyes[2] = { 1, -1 };
+
+    return sliding_attacks(orig, blocks, dxes, dyes, 2);
 }
 
 U64 q_moves(U64 orig, U64 blocks) {
