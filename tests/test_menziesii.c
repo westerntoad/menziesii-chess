@@ -152,6 +152,7 @@ static void test_perfts() {
     assert_perft("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1", 4, 422333);
     assert_perft("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8", 4, 2103487);
     assert_perft("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10", 4, 3894594);
+    assert_perft("4Q3/5p2/6kp/3P1np1/1B6/8/8/K7 b - - 0 3", 1, 13);
     
     end = clock();
     duration = (double)(end - start) / CLOCKS_PER_SEC;
