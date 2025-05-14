@@ -98,8 +98,6 @@ static void print_pv(PrincipleVariation *pv, double time) {
         printf(" time %.0lf", time * 1000);
     }
 
-    printf(" SEARCH_TIME=%d", SEARCH_TIME);
-
     printf("\n");
 }
 

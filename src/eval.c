@@ -90,6 +90,8 @@ static const int PIECE_SQUARE_TABLE[NUM_PIECES + 1][NUM_SQUARES] = {
 int quiesce(Board *board, int alpha, int beta) {
     int score, best = piece_eval(board);
 
+    NUM_NODES++;
+
     if (best >= beta)
         return best;
 

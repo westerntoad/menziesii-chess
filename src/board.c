@@ -578,11 +578,19 @@ Move move_from_str(Board *board, char* str) {
     from_bb = 1ULL << from;
     to_bb = 1ULL << to;
     
-    if ((1ULL << from) & (e1 | e8) & board->pieces[KING_IDX]) { // castling
+    if ((1ULL << from) & ((1ULL << e1) | (1ULL << e8)) & board->pieces[KING_IDX]) { // castling
         if (from == e1) {
-            return to == g1 ? MOVE_W_SHORT_CASTLE : MOVE_W_LONG_CASTLE;
+            if (to == g1) {
+                return MOVE_W_SHORT_CASTLE;
+            } else if (to == c1) {
+                return MOVE_W_LONG_CASTLE;
+            }
         } else {
-            return to == g8 ? MOVE_B_SHORT_CASTLE : MOVE_B_LONG_CASTLE;
+            if (to == g8) {
+                return MOVE_B_SHORT_CASTLE;
+            } else if (to == c8) {
+                return MOVE_B_LONG_CASTLE;
+            }
         }
     }
 
