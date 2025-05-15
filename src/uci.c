@@ -10,8 +10,8 @@
 
 #define IDENTIFY_NAME "Menziesii"
 #define IDENTIFY_AUTHOR "Abraham Engebretson"
-#define INITIAL_READ_SIZE 2<<0
-#define MAX_STR_SIZE 2<<15
+#define INITIAL_READ_SIZE 2<<5
+#define INITIAL_MOVE_LENGTH 2<<5
 
 static char* next_token(char** input) {
     char* pt = *input;
@@ -54,9 +54,34 @@ static int has(char** input, char* word) {
     return 0;
 }
 
+static char** read_moves(char** input) {
+    char** moves = malloc(sizeof(char*) * INITIAL_MOVE_LENGTH);
+    int i = 0;
+    int capacity = INITIAL_MOVE_LENGTH;
+
+    while (**input != '\n') {
+        if (i >= capacity) {
+            capacity *= 2;
+            moves = realloc(moves, sizeof(char*) * capacity);
+            if (moves == NULL) {
+                fprintf(stderr, "Error allocating input string of size %d.\nExiting...", capacity);
+                free(moves);
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        moves[i] = *input;
+        next_token(input);
+        i++;
+    }
+    moves[i] = NULL;
+    
+    return moves;
+}
+
 static void position(char** input) {
     char* fen = NULL;
-    char moves[512][5] = { 0 };
+    char **moves = NULL;
     int i = 0;
     int state = 0;
 
@@ -79,16 +104,12 @@ static void position(char** input) {
             i = 0;
             state = 1;
         } else if (has(input, "moves") && state == 1) {
-            state = 2;
-        } else if (state == 2) {
-            strncpy(moves[i], next_token(input), 4);
-            i++;
+            moves = read_moves(input);
+            break;
         } else {
             consume_token(input);
         }
     }
-
-    strcpy(moves[i], "");
 
     if (state > 0) {
         set_position(fen, moves);

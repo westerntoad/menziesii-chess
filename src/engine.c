@@ -105,16 +105,18 @@ void engine_quit() {
         free_board(CURR_BOARD);
 }
 
-int set_position(char* fen, char moves[][5]) {
-    int i = 0;
+int set_position(char* fen, char** moves) {
     if (fen == NULL)
         fen = START_FEN;
 
     CURR_BOARD = from_fen(fen);
 
-    while (moves[i][0]) {
-        make_move(CURR_BOARD, move_from_str(CURR_BOARD, moves[i]));
-        i++;
+    if (moves != NULL) {
+        while (*moves) {
+            Move move = move_from_str(CURR_BOARD, *moves);
+            make_move(CURR_BOARD, move);
+            moves++;
+        }
     }
 
     return 0;

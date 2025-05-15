@@ -24,7 +24,7 @@ static const SearchParams PARAMS_DEFAULT = (SearchParams){
 
 void engine_init();
 void engine_quit();
-int set_position(char* fen, char moves[][5]);
+int set_position(char* fen, char** moves);
 void print_engine();
 void go_perft(int depth);
 void go_random();
