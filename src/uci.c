@@ -5,12 +5,12 @@
 #include <stdlib.h>
 #include <time.h>
 #include "engine.h"
-#include "eval.h"
 #include "uci.h"
 #include "utils.h" // includes <stdio.h>
 
 #define IDENTIFY_NAME "Menziesii"
 #define IDENTIFY_AUTHOR "Abraham Engebretson"
+#define INITIAL_READ_SIZE 2<<0
 #define MAX_STR_SIZE 2<<15
 
 static char* next_token(char** input) {
@@ -133,45 +133,70 @@ static void stop() {
     stop_search();
 }
 
-int uci(void) {
-    engine_init();
-    char *str = (char*)malloc(MAX_STR_SIZE * sizeof(char));
+static char* read() {
+    char *read_str = malloc(sizeof(char) * INITIAL_READ_SIZE);
+    int capacity = INITIAL_READ_SIZE;
+    int i = 0;
+    int curr = 0;
 
-    printf("id name %s dev-%d-%s\nid author %s\n", IDENTIFY_NAME, BUILD_DATE, GIT_HASH, IDENTIFY_AUTHOR);
-    printf("uciok\n");
-    while (1) {
-        if (fgets(str, MAX_STR_SIZE, stdin) == NULL) {
-            return -1;
+    while (curr != '\n') {
+        if (i >= capacity) {
+            capacity *= 2;
+            read_str = realloc(read_str, sizeof(char) * capacity);
+            if (read_str == NULL) {
+                fprintf(stderr, "Error allocating input string of size %d.\nExiting...", capacity);
+                free(read_str);
+                exit(EXIT_FAILURE);
+            }
         }
 
-        while (*str != '\n' && *str != '\0') {
-            if (has(&str, "isready")) {
+        curr = fgetc(stdin);
+        read_str[i] = curr;
+
+        i++;
+    }
+    return read_str;
+}
+
+int uci(void) {
+    engine_init();
+    char* read_str = read();
+    char* ptr;
+
+    while (1) { // read by line
+        ptr = read_str;
+        while (*ptr != '\n' && *ptr != '\0') { // read by token
+            if (has(&ptr, "uci")) {
+                printf("id name %s dev-%d-%s\nid author %s\nuciok\n", IDENTIFY_NAME, COMMIT_DATE, GIT_HASH, IDENTIFY_AUTHOR);
+            } else if (has(&ptr, "isready")) {
                 printf("readyok\n");
                 break;
-            } else if (has(&str, "position")) {
-                position(&str);
+            } else if (has(&ptr, "position")) {
+                position(&ptr);
                 break;
-            } else if (has(&str, "go")) {
-                go(&str);
+            } else if (has(&ptr, "go")) {
+                go(&ptr);
                 break;
-            } else if (has(&str, "stop")) {
+            } else if (has(&ptr, "stop")) {
                 stop();
                 break;
-            } else if (has(&str, "quit")) {
-                engine_quit();
-
-                return 0;
-            } else if (has(&str, "d")) {
+            } else if (has(&ptr, "d")) {
                 print_engine();
 
                 break;
+            } else if (has(&ptr, "quit")) {
+                engine_quit();
+
+                free(ptr);
+                return 0;
             } else {
-                consume_token(&str);
+                consume_token(&ptr);
             }
         }
+
+        free(read_str);
+        read_str = read();
     }
-    
-    return 0;
 }
 
 
