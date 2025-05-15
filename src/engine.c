@@ -88,8 +88,8 @@ static void* search(void* arg) {
     printf("\n");
 
     free_board(board);
-
     SEARCHING = 0;
+
     return NULL;
 }
 
@@ -106,6 +106,9 @@ void engine_quit() {
 }
 
 int set_position(char* fen, char** moves) {
+    if (CURR_BOARD)
+        free(CURR_BOARD);
+
     if (fen == NULL)
         fen = START_FEN;
 
@@ -123,27 +126,47 @@ int set_position(char* fen, char** moves) {
 }
 
 void print_engine() {
-    print_board(CURR_BOARD);
-}
-
-void start_search(SearchParams params) {
-    SEARCHING = 1;
-    pthread_create(&SEARCH_THREAD, NULL, search, &params);
+    if (CURR_BOARD)
+        print_board(CURR_BOARD);
 }
 
 void go_perft(int depth) {
+    if (!CURR_BOARD)
+        return;
+
     print_perft(CURR_BOARD, depth);
 }
 
 void go_random() {
+    if (!CURR_BOARD)
+        return;
+
     printf("bestmove ");
     print_move(random_move(CURR_BOARD));
     printf("\n");
 }
 
+void start_search(SearchParams params) {
+    if (!CURR_BOARD)
+        return;
+
+    SearchParams* ptr = malloc(sizeof(SearchParams));
+
+    if (ptr != NULL) {
+        *ptr = params;
+    }
+
+    SEARCHING = 1;
+    pthread_create(&SEARCH_THREAD, NULL, search, ptr);
+}
+
+
 int stop_search() {
+    if (!SEARCHING)
+        return 0;
+
     STOP_SEARCH = 1;
     pthread_join(SEARCH_THREAD, NULL);
 
-    return SEARCHING;
+    return 1;
 }

@@ -14,7 +14,7 @@ typedef struct {
 
 static const SearchParams PARAMS_DEFAULT = (SearchParams){
     .infinite = 0,
-    .depth = 0,
+    .depth = 99,
     .wtime = 0,
     .btime = 0,
     .winc = 0,
