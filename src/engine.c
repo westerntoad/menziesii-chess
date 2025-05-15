@@ -9,6 +9,8 @@
 #include "movegen.h"
 #include "utils.h" // includes <stdio.h>
 
+#define START_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
 volatile int STOP_SEARCH;
 volatile int SEARCH_TIME;
 volatile int SEARCHING;
@@ -48,9 +50,11 @@ static void print_pv(PrincipleVariation *pv, double time) {
 }
 
 static void* search(void* arg) {
+    Board *board = copy_board(CURR_BOARD);
     PrincipleVariation pv;
     PrincipleVariation new_pv;
     SearchParams params = *(SearchParams*)arg;
+    SEARCH_TIME = params.movetime;
     int curr_depth = 0;
     clock_t start, end;
 
@@ -64,7 +68,7 @@ static void* search(void* arg) {
 
         NUM_NODES = 0;
         start = clock();
-        new_pv = eval(CURR_BOARD, curr_depth);
+        new_pv = eval(board, curr_depth);
         end = clock();
         
     } while ((params.depth < 0 || (curr_depth < params.depth)) && !STOP_SEARCH);
@@ -83,22 +87,55 @@ static void* search(void* arg) {
     }
     printf("\n");
 
+    free_board(board);
+
     SEARCHING = 0;
     return NULL;
 }
 
 void engine_init() {
     STOP_SEARCH = 0;
+    SEARCHING = 0;
+    CURR_BOARD = NULL;
     init_move_lookup_tables();
 }
 
-void start_search(Board *board, SearchParams params) {
-    SEARCHING = 1;
-    if (CURR_BOARD) {
-        free(CURR_BOARD);
+void engine_quit() {
+    free_board(CURR_BOARD);
+}
+
+int set_position(char* fen, char moves[][5]) {
+    int i = 0;
+    if (fen == NULL)
+        fen = START_FEN;
+
+    CURR_BOARD = from_fen(fen);
+
+    while (moves[i][0]) {
+        make_move(CURR_BOARD, move_from_str(CURR_BOARD, moves[i]));
+        i++;
     }
-    CURR_BOARD = copy_board(board);
+
+    return 0;
+}
+
+void print_engine() {
+    print_board(CURR_BOARD);
+}
+
+void start_search(SearchParams params) {
+    SEARCHING = 1;
     pthread_create(&SEARCH_THREAD, NULL, search, &params);
+}
+
+void go_perft(int depth) {
+    print_perft(CURR_BOARD, depth);
+}
+
+void go_random() {
+    printf("bestmove ");
+    print_move(random_move(CURR_BOARD));
+    printf("\n");
 }
 
 int stop_search() {

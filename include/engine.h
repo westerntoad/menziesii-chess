@@ -23,7 +23,12 @@ static const SearchParams PARAMS_DEFAULT = (SearchParams){
 };
 
 void engine_init();
-void start_search(Board *board, SearchParams params); // TODO remove board
+void engine_quit();
+int set_position(char* fen, char moves[][5]);
+void print_engine();
+void go_perft(int depth);
+void go_random();
+void start_search(SearchParams params);
 int stop_search();
 
 

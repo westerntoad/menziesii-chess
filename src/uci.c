@@ -4,26 +4,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
-#include "board.h"
 #include "engine.h"
 #include "eval.h"
 #include "uci.h"
 #include "utils.h" // includes <stdio.h>
 
 #define IDENTIFY_STR "id name Menziesii\nid author Abraham Engebretson\n"
-
 #define MAX_STR_SIZE 2<<15
-
-static Board *G_BOARD;
-
-static const int NUM_TEST_FENS = 5;
-static char *TEST_FENS[] = {
-    "k7/8/8/8/8/8/8/7K w - - 0 1", // X
-    "k7/4R3/4PR2/5P2/8/8/8/7K w - - 0 1", // X
-    "k7/8/6b1/8/5b2/4b3/8/7K b - - 0 1", // X
-    "8/p2B2B1/p7/p7/p7/p7/pr6/k6K w - - 0 1", // X
-    "r1bqkb1r/pppppppp/2n2n2/1N6/8/8/PPPPPPPP/R1BQKBNR w KQkq - 4 3"
-};
 
 static char* next_token(char** input) {
     char* pt = *input;
@@ -67,50 +54,43 @@ static int has(char** input, char* word) {
 }
 
 static void position(char** input) {
-    Move move;
-    char buff[64];
-    char* pt;
-    int i;
+    char* fen = NULL;
+    char moves[512][5] = { 0 };
+    int i = 0;
     int state = 0;
 
-    if (G_BOARD)
-        free_board(G_BOARD);
-
     while (**input != '\n') {
-        for (i = 0; i < NUM_TEST_FENS && state == 0; i++) {
-            snprintf(buff, 64, "%d", i+1);
-            if (has(input, buff)) {
-                G_BOARD = from_fen(TEST_FENS[i]);
-                state = 1;
-            }
-        }
-
         if (has(input, "startpos") && state == 0) {
-            G_BOARD = from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
             state = 1;
         } else if (has(input, "fen")) {
-            pt = *input;
+            fen = *input;
             for (i = 0; i < 6; i++) {
                 consume_token(input);
             }
             if (**input == '\n') {
                 **input = '\0';
-                G_BOARD = from_fen(pt);
+                state = 1;
                 break;
             } else {
                 *((*input) - 1) = '\0';
-                G_BOARD = from_fen(pt);
             }
 
+            i = 0;
             state = 1;
         } else if (has(input, "moves") && state == 1) {
             state = 2;
         } else if (state == 2) {
-            move = move_from_str(G_BOARD, next_token(input));
-            make_move(G_BOARD, move);
+            strncpy(moves[i], next_token(input), 4);
+            i++;
         } else {
             consume_token(input);
         }
+    }
+
+    strcpy(moves[i], "");
+
+    if (state > 0) {
+        set_position(fen, moves);
     }
 }
 
@@ -119,16 +99,11 @@ static void go(char** input) {
 
     while (**input != '\n') {
         if (has(input, "perft")) {
-            if (G_BOARD)
-                print_perft(G_BOARD, atoi(next_token(input)));
+            go_perft(atoi(next_token(input)));
 
             return;
         } else if (has(input, "random")) {
-            if (G_BOARD) {
-                printf("bestmove ");
-                print_move(random_move(G_BOARD));
-                printf("\n");
-            }
+            go_random();
 
             return;
         } else if (has(input, "movetime")) {
@@ -145,12 +120,12 @@ static void go(char** input) {
             params.binc = atoi(next_token(input));
         } else if (has(input, "infinite")) {
             params.infinite = 1;
-        } else {
+        } else { // TODO searchmoves
             consume_token(input);
         }
     }
 
-    start_search(G_BOARD, params);
+    start_search(params);
 }
 
 static void stop() {
@@ -160,7 +135,6 @@ static void stop() {
 int uci(void) {
     engine_init();
     char *str = (char*)malloc(MAX_STR_SIZE * sizeof(char));
-    G_BOARD = NULL;
 
     printf(IDENTIFY_STR);
     printf("\nuciok\n");
@@ -183,14 +157,11 @@ int uci(void) {
                 stop();
                 break;
             } else if (has(&str, "quit")) {
-                //free(str); // TODO fix
-                if (G_BOARD)
-                    free_board(G_BOARD);
+                engine_quit();
 
                 return 0;
             } else if (has(&str, "d")) {
-                if (G_BOARD)
-                    print_board(G_BOARD);
+                print_engine();
 
                 break;
             } else {
