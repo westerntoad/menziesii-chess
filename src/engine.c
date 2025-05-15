@@ -101,7 +101,8 @@ void engine_init() {
 }
 
 void engine_quit() {
-    free_board(CURR_BOARD);
+    if (CURR_BOARD)
+        free_board(CURR_BOARD);
 }
 
 int set_position(char* fen, char moves[][5]) {

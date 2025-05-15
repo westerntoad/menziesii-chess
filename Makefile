@@ -1,6 +1,9 @@
 # Compiler and flags
 CC = gcc
 CFLAGS = -Wall -Wextra -O2
+BUILD_DATE := $(shell git log -1 --format=%cd --date=format:%Y%m%d)
+GIT_HASH := $(shell git rev-parse --short HEAD)
+CFLAGS += -DBUILD_DATE=$(BUILD_DATE) -DGIT_HASH=\"$(GIT_HASH)\"
 DEBUG_CFLAGS = -DDEBUG -g
 LDFLAGS = -lm
 

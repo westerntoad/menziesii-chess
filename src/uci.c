@@ -9,7 +9,8 @@
 #include "uci.h"
 #include "utils.h" // includes <stdio.h>
 
-#define IDENTIFY_STR "id name Menziesii\nid author Abraham Engebretson\n"
+#define IDENTIFY_NAME "Menziesii"
+#define IDENTIFY_AUTHOR "Abraham Engebretson"
 #define MAX_STR_SIZE 2<<15
 
 static char* next_token(char** input) {
@@ -136,8 +137,8 @@ int uci(void) {
     engine_init();
     char *str = (char*)malloc(MAX_STR_SIZE * sizeof(char));
 
-    printf(IDENTIFY_STR);
-    printf("\nuciok\n");
+    printf("id name %s dev-%d-%s\nid author %s\n", IDENTIFY_NAME, BUILD_DATE, GIT_HASH, IDENTIFY_AUTHOR);
+    printf("uciok\n");
     while (1) {
         if (fgets(str, MAX_STR_SIZE, stdin) == NULL) {
             return -1;
