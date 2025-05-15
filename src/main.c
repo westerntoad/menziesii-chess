@@ -30,7 +30,6 @@
 int main(void) {
     char *str = (char*)malloc(MAX_STR_SIZE * sizeof(char));
     srand(time(NULL));
-    init_move_lookup_tables();
     setbuf(stdout, NULL);
 
     while (1) {
