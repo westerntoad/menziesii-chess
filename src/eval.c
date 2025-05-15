@@ -145,7 +145,7 @@ PrincipleVariation negamax(Board *board, int alpha, int beta, int depth) {
             if (is_in_check(board)) {
                 // mate
                 pv.is_mate = true;
-                pv.score = -CHECKMATE_CP;
+                pv.score = -(CHECKMATE_CP + depth); // TODO this is bad
             } else {
                 // stalemate
                 pv.score = 0;
