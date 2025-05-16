@@ -7,6 +7,7 @@
 #include "engine.h"
 #include "eval.h"
 #include "movegen.h"
+#include "table.h"
 #include "utils.h" // includes <stdio.h>
 
 #define START_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -98,11 +99,16 @@ void engine_init() {
     SEARCHING = 0;
     CURR_BOARD = NULL;
     init_move_lookup_tables();
+    init_engine_table(16);
 }
 
 void engine_quit() {
     if (CURR_BOARD)
         free_board(CURR_BOARD);
+}
+
+void init_engine_table(int size) {
+    init_table();
 }
 
 int set_position(char* fen, char** moves) {
@@ -126,8 +132,13 @@ int set_position(char* fen, char** moves) {
 }
 
 void print_engine() {
-    if (CURR_BOARD)
-        print_board(CURR_BOARD);
+    if (!CURR_BOARD)
+        return;
+
+    printf("FEN:  %s\n", to_fen(CURR_BOARD));
+    printf("Hash: %lx\n", board_hash(CURR_BOARD));
+    print_board(CURR_BOARD);
+
 }
 
 void go_perft(int depth) {

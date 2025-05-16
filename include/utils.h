@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include <wchar.h>  // used for unicode printing
 #include <assert.h>
+#include "types.h"
+
+int psrng_u64_seed(U64 seed);
+U64 psrng_u64();
 
 #ifdef DEBUG
     #define LOG(...) printf(__VA_ARGS__)

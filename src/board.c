@@ -963,8 +963,6 @@ void print_board(Board *board) {
     int i, j, k, c, color, piece;
     char castle_rights[5];
     
-    printf("%s\n", to_fen(board));
-
     printf("           %c to move\n", board->side_to_move ? 'b' : 'w');
     printf("       ");
     for (i = 0; i < 8; i++) {

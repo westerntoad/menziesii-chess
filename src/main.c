@@ -4,6 +4,8 @@
 #include <time.h>
 #include "uci.h"
 
+#include "utils.h"
+
 // TODO
 // TRANSPOSITION TABLE
 // 50 half-move rule
