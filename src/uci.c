@@ -208,7 +208,7 @@ int uci(void) {
             } else if (has(&ptr, "quit")) {
                 engine_quit();
 
-                free(ptr);
+                free(read_str);
                 return 0;
             } else {
                 consume_token(&ptr);
