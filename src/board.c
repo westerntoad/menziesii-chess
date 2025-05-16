@@ -7,7 +7,7 @@
 #include "movegen.h"
 #include "utils.h" // includes <stdio.h>
 
-#define INITIAL_MOVE_CAPACITY 500
+#define INITIAL_MOVE_CAPACITY 128
 #define HALF_MOVE_MASK 0x1ffff
 
 Board* copy_board(Board *board) { // DEBUG
