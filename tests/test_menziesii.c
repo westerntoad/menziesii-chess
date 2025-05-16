@@ -72,7 +72,7 @@ static void assert_eval(char* fen, int depth, int upper_bound, int lower_bound) 
     if ((lower_bound <= actual) && (actual <= upper_bound)) {
         TESTS_PASSED++;
     } else {
-        printf("PIECE EVAL ASSERTION FAILED\nFEN       %s\nUPPER     %d\nLOWER     %d\nACTUAL    %d\n", fen, lower_bound, upper_bound, actual);
+        printf("EVAL ASSERTION FAILED\nFEN       %s\nUPPER     %d\nLOWER     %d\nACTUAL    %d\n", fen, lower_bound, upper_bound, actual);
     }
 
     free(board);
@@ -186,7 +186,30 @@ static void test_mates() {
     //assert_mate("", 0);
 }
 
+static void test_state_stack() {
+    printf("Stress-testing state stack...\n");
+    int i, j;
+    int total_tests = 64;
+    int num_kk = 0;
+
+    for (i = 0; i < total_tests; i++) {
+        Board* board = from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        Move random = random_move(board);
+        for (j = 0; j < (2<<16) && random != 0; j++) {
+            //printf("%d\n", i);
+            make_move(board, random);
+            random = random_move(board);
+        }
+        if (j == (2<<16))
+            num_kk++;
+    }
+
+    printf("Random matches had a %.1lf%% rate of being a king-king endamge (n=%d)", ((double)num_kk) / ((double)total_tests)*100, total_tests);
+}
+
 int main(void) {
+    srand(time(NULL));
+    setbuf(stdout, NULL);
     init_move_lookup_tables();
     TESTS_RUN = 0;
     TESTS_PASSED = 0;
@@ -196,6 +219,7 @@ int main(void) {
     test_perfts();
     test_eval();
     test_mates();
+    test_state_stack();
 
     if (TESTS_RUN == TESTS_PASSED) {
         printf("\nAll tests passed.\n");

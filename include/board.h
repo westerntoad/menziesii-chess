@@ -7,12 +7,13 @@
 #define MAX_NUM_LEGAL_MOVES 218
 
 typedef struct {
-    U64  colors[NUM_COLORS];
-    U64  pieces[NUM_PIECES];
-    int  ply;
+    U64 colors[NUM_COLORS];
+    U64 pieces[NUM_PIECES];
+    int ply;
     bool side_to_move;
     StateFlags *state_stack;
     int stack_capacity;
+    int ply_offset;
 } Board;
 
 void make_move(Board *board, Move move);

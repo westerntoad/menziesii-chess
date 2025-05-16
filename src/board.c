@@ -14,8 +14,8 @@ Board* copy_board(Board *board) { // DEBUG
     int i;
     Board *copy = (Board*)malloc(sizeof(Board));
     memset(copy, 0, sizeof(Board));
-    copy->stack_capacity = INITIAL_MOVE_CAPACITY;
-    copy->state_stack = (StateFlags *)malloc(board->stack_capacity * sizeof(StateFlags));
+    copy->stack_capacity = board->stack_capacity;
+    copy->state_stack = (StateFlags *)malloc(copy->stack_capacity * sizeof(StateFlags));
 
     for (i = 0; i < NUM_COLORS; i++)
         copy->colors[i] = board->colors[i];
@@ -28,6 +28,7 @@ Board* copy_board(Board *board) { // DEBUG
 
     copy->ply = board->ply;
     copy->side_to_move = board->side_to_move;
+    copy->ply_offset = board->ply_offset;
 
     return copy;
 }
@@ -190,6 +191,7 @@ void make_move(Board *board, Move move) {
     int i, j;
 
     next_state &= 0xf801ffff; // clear previous captured piece & ep_target
+    next_state++;
 
     board->ply++;
     board->side_to_move ^= 1;
@@ -239,13 +241,15 @@ void make_move(Board *board, Move move) {
         if (board->pieces[i] & from)
             break;
     }
+
+    if (i == PAWN_IDX)
+        next_state &= 0xfffe0000; // clear half-move clock
     
     if (move >> 12 == 5) { // check if ep capture
         aux1 = curr_color ? nort_one(to) : sout_one(to); // ep-captured pawn
         
         board->pieces[PAWN_IDX] &= ~aux1;
         board->colors[curr_color ^ 1] &= ~aux1;
-        next_state &= 0xfffe0000; // clear half-move clock
     } else if (move & 0x4000) { // check if capture
         for (j = 0; j < NUM_PIECES; j++) {
             if (board->pieces[j] & to)
@@ -300,7 +304,17 @@ void make_move(Board *board, Move move) {
     board->colors[curr_color] |= to;
 
 end:
-    board->state_stack[board->ply] = next_state; // TODO check if ply >= capacity
+    if (board->ply >= board->stack_capacity) {
+        board->stack_capacity *= 2;
+        board->state_stack = realloc(board->state_stack, sizeof(StateFlags) * board->stack_capacity);
+        if (board->state_stack == NULL) {
+            fprintf(stderr, "Error allocating new state stack of size %d.\nExiting...", board->stack_capacity);
+            free(board->state_stack);
+            free(board);
+            exit(EXIT_FAILURE);
+        }
+    }
+    board->state_stack[board->ply] = next_state;
 }
 
 void unmake_move(Board *board, Move move) {
@@ -564,8 +578,12 @@ bool is_in_check(Board *board) {
 Move random_move(Board *board) {
     Move *curr = (Move[256]){0};
     Move *end = legal_moves(board, curr);
-    
+
+    if (curr == end)
+        return 0;
+
     return *(curr + (rand() % *end));
+    
 }
 
 Move move_from_str(Board *board, char* str) {
@@ -790,9 +808,14 @@ Board* from_fen(char* fen) {
 
     i += 2;
 
-    /*for (; fen[i] != ' '; i++); // TODO half-move clock
+    board->state_stack[board->ply] |= (atoi(fen + i) & 0x1ffff);
+    for (; fen[i] != ' '; i++);
     i++;
-    for (; fen[i] != ' '; i++); // TODO full-move num*/
+
+    board->ply_offset = atoi(fen + i) * 2 - 2;
+    if (board->side_to_move == BLACK)
+        board->ply_offset++;
+    for (; fen[i] != ' '; i++);
 
     return board;
 }
@@ -903,7 +926,7 @@ char* to_fen(Board *board) {
         *(ptr++) = '-';
     }
 
-    sprintf(ptr, " %d %d", half_moves(board), (board->ply / 2) + 1);
+    sprintf(ptr, " %d %d", half_moves(board), ((board->ply + board->ply_offset) / 2) + 1);
 
 
     return fen;
@@ -992,7 +1015,7 @@ void print_board(Board *board) {
     for (i = 0; i < 8; i++) {
         printf("%c ", 0x61 + i);
     }
-    printf("\n     ply %15d", board->ply);
+    printf("\n     ply %15d", board->ply + board->ply_offset);
     i = 0;
     if (can_castle(board, WHITE, KINGSIDE)) {
         castle_rights[i] = 'K';
@@ -1025,10 +1048,10 @@ void print_board(Board *board) {
     }
     printf("\n");
 #if DEBUG
-    for (i = 0; i <= board->ply; i++) {
+    /*for (i = 0; i <= board->ply; i++) {
         printf("%x\n", board->state_stack[i]);
     }
-    printf("\n");
+    printf("\n");*/
 #endif
 }
 
