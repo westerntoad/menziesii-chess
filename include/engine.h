@@ -1,6 +1,8 @@
 #ifndef ENGINE_H // include guard
 #define ENGINE_H
 
+#include "types.h"
+
 #define DEFAULT_TT_SIZE 16
 
 typedef struct {
@@ -25,6 +27,7 @@ static const SearchParams PARAMS_DEFAULT = (SearchParams){
 };
 
 void engine_init();
+void engine_set_debug(bool mode);
 void engine_quit();
 void resize_engine_table(int mb_size);
 int set_position(char* fen, char** moves);

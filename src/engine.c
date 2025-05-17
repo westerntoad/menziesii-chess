@@ -20,23 +20,26 @@ U64 NUM_NODES;
 
 static pthread_t SEARCH_THREAD;
 static Board *CURR_BOARD;
+static bool UCI_DEBUG_ON = false;
 
-static void print_pv(PrincipleVariation *pv, double time) {
-    printf("info depth %d score ", pv->depth);
-    if (pv->is_mate) {
-        printf("mate %d", ((pv->depth + 1) / 2) * (CURR_BOARD->side_to_move * (-2) + 1)); // TODO remove -1
+static void print_tt_entry(TTEntry* entry, double time) {
+    printf("info depth %d score ", entry->depth);
+    if (abs(entry->score) > CHECKMATE_CP) {
+        //printf("mate %d", ((pv->depth + 1) / 2) * (CURR_BOARD->side_to_move * (-2) + 1)); // TODO remove -1
+        printf("mate ?"); // TODO change
     } else {
-        printf("cp %d", pv->score);
+        printf("cp %d", entry->score);
     }
 
-    if (pv->depth > 0) {
+    // TODO pv
+    /*if (pv->depth > 0) {
         printf(" pv");
 
         for (int i = 0; i < pv->depth; i++) {
             printf(" ");
             print_move(pv->line[i]);
         }
-    }
+    }*/
 
     if (NUM_NODES > 0) {
         printf(" nodes %lu", NUM_NODES);
@@ -48,44 +51,45 @@ static void print_pv(PrincipleVariation *pv, double time) {
     }
 
     printf("\n");
+    if (UCI_DEBUG_ON) {
+        printf("info string HASH %lx\n", entry->key);
+    }
 }
 
 static void* search(void* arg) {
     Board *board = copy_board(CURR_BOARD);
-    PrincipleVariation pv;
-    PrincipleVariation new_pv;
     SearchParams params = *(SearchParams*)arg;
     SEARCH_TIME = params.movetime;
     int curr_depth = 0;
+    U64 hash;
     clock_t start, end;
 
     start_timer();
     do {
         curr_depth++;
         if (curr_depth > 1) {
-            pv = new_pv;
-            print_pv(&pv, (double)(end - start) / CLOCKS_PER_SEC);
+            print_tt_entry(tt_probe(hash), (double)(end - start) / CLOCKS_PER_SEC);
         }
 
         NUM_NODES = 0;
         start = clock();
-        new_pv = eval(board, curr_depth);
+        hash = eval(board, curr_depth);
         end = clock();
         
     } while ((params.depth < 0 || (curr_depth < params.depth)) && !STOP_SEARCH);
 
     if (!STOP_SEARCH || curr_depth <= 1) {
-        pv = new_pv;
-        print_pv(&pv, (double)(end - start) / CLOCKS_PER_SEC);
+        hash = board_hash(board);
+        print_tt_entry(tt_probe(hash), (double)(end - start) / CLOCKS_PER_SEC);
     }
     STOP_SEARCH = 0;
 
     printf("bestmove ");
-    print_move(pv.line[0]);
-    if (pv.depth > 1) {
+    print_move(tt_probe(hash)->best);
+    /*if (pv.depth > 1) {
         printf(" ponder ");
         print_move(pv.line[1]);
-    }
+    }*/
     printf("\n");
 
     free_board(board);
@@ -101,6 +105,10 @@ void engine_init() {
     init_move_lookup_tables();
     init_zobrist();
     resize_engine_table(DEFAULT_TT_SIZE);
+}
+
+void engine_set_debug(bool mode) {
+    UCI_DEBUG_ON = mode;
 }
 
 void engine_quit() {

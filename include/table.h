@@ -12,7 +12,7 @@
 typedef struct {
     U64  key;
     char type;
-    int  depth;
+    int  depth; // TODO shorten depth to U8
     int  score;
     Move best;
 } TTEntry;

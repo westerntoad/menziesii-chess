@@ -206,6 +206,14 @@ int uci(void) {
                 print_engine();
 
                 break;
+            } else if (has(&ptr, "debug")) {
+                if (has(&ptr, "on")) {
+                    engine_set_debug(true);
+                    break;
+                } else if (has(&ptr, "off")) {
+                    engine_set_debug(false);
+                    break;
+                }
             } else if (has(&ptr, "quit")) {
                 engine_quit();
 

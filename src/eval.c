@@ -3,9 +3,9 @@
 #include <time.h>
 #include "eval.h"
 #include "utils.h"
+#include "table.h"
 #include "types.h"
 
-#define CHECKMATE_CP (2 << 15)
 #define INF (2 << 16)
 
 extern volatile int STOP_SEARCH;
@@ -87,6 +87,26 @@ static const int PIECE_SQUARE_TABLE[NUM_PIECES + 1][NUM_SQUARES] = {
     }
 };
 
+static int should_stop_search(int depth) {
+    if (STOP_SEARCH)
+        return 1;
+
+    if (depth <= 4)
+        return 0;
+
+    if (SEARCH_TIME > 0) {
+        clock_gettime(CLOCK_MONOTONIC, &END_TIME);
+        double duration = (END_TIME.tv_sec - START_TIME.tv_sec);
+        duration += (END_TIME.tv_nsec - START_TIME.tv_nsec) / 1000000000.0;
+        //SEARCH_TIME -= (int)round(duration*1000);
+        if ((int)round(duration*1000) >= SEARCH_TIME) {
+            STOP_SEARCH = 1; // TODO not atomic
+        }
+    }
+    
+    return 0;
+}
+
 int quiesce(Board *board, int alpha, int beta) {
     int score, best = piece_eval(board);
 
@@ -125,77 +145,59 @@ int quiesce(Board *board, int alpha, int beta) {
     return best;
 }
 
-PrincipleVariation negamax(Board *board, int alpha, int beta, int depth) {
-    PrincipleVariation pv, child;
-    pv.is_mate = false;
-    pv.depth = depth;
-
+int alphabeta(Board *board, int alpha, int beta, int depth) {
     NUM_NODES++;
     
     if (depth == 0) {
-        pv.score = quiesce(board, alpha, beta);
+        return quiesce(board, alpha, beta);
     } else {
-        memset(pv.line, 0, MAX_DEPTH * sizeof(Move));
-
         Move *curr = (Move[256]){0};
         Move *end = legal_moves(board, curr);
+        Move best_move = *curr;
 
         if (curr == end) {
-            pv.depth = 0;
             if (is_in_check(board)) {
                 // mate
-                pv.is_mate = true;
-                pv.score = -(CHECKMATE_CP + depth); // TODO this is bad
+                return -(CHECKMATE_CP + depth); // TODO this is bad
             } else {
                 // stalemate
-                pv.score = 0;
+                return 0; // TODO contempt score
             }
-            return pv;
         }
 
-        pv.score = -INF;
-
-        while (curr < end && (depth < 3 || !STOP_SEARCH)) {
+        while (curr < end) {
             make_move(board, *curr);
-            child = negamax(board, -beta, -alpha, depth-1);
+            int score = -alphabeta(board, -beta, -alpha, depth-1);
             unmake_move(board, *curr);
-            if (-child.score > pv.score) {
-                pv.score = -child.score;
-                pv.line[0] = *curr;
-                memcpy(pv.line + 1, child.line, (MAX_DEPTH - 1) * sizeof(Move)); // maybe correct?
-                pv.is_mate = child.is_mate;
-                pv.depth = child.depth + 1;
-                if (pv.score > alpha)
-                    alpha = pv.score;
+
+            if (score >= beta) {
+                return beta;
+            }
+            
+            if (score > alpha) {
+                best_move = *curr;
+                alpha = score;
             }
 
-            if (pv.score >= beta) {
-                return pv;
-            }
-
-            if (depth >= 3 && SEARCH_TIME > 0) {
-                clock_gettime(CLOCK_MONOTONIC, &END_TIME);
-                double duration = (END_TIME.tv_sec - START_TIME.tv_sec);
-                duration += (END_TIME.tv_nsec - START_TIME.tv_nsec) / 1000000000.0;
-                //SEARCH_TIME -= (int)round(duration*1000);
-                if ((int)round(duration*1000) >= SEARCH_TIME) {
-                    STOP_SEARCH = 1; // TODO not atomic
-                }
-            }
+            if (should_stop_search(depth))
+                break;
 
             curr++;
         }
+        U64 key = board_hash(board);
+        printf("%lx\n", key);
+        tt_save(key, depth, alpha, best_move, EXACT_NODE);
+        return alpha;
     }
-    
-    return pv;
 }
 
 void start_timer() {
     clock_gettime(CLOCK_MONOTONIC, &START_TIME);
 }
 
-PrincipleVariation eval(Board *board, int depth) {
-    return negamax(board, -INF, INF, depth);
+U64 eval(Board *board, int depth) {
+    alphabeta(board, -INF, INF, depth);
+    return board_hash(board);
 }
 
 int piece_eval(Board *board) {

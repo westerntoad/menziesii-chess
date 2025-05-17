@@ -11,16 +11,9 @@
 
 #define MAX_DEPTH 20
 
-typedef struct {
-    Move line[MAX_DEPTH];
-    bool is_mate;
-    int depth;
-    int score;
-    int alpha;
-    int beta;
-} PrincipleVariation;
+#define CHECKMATE_CP (2 << 15)
 
-PrincipleVariation eval(Board *board, int depth);
+U64 eval(Board *board, int depth);
 int piece_eval(Board *board);
 void start_timer();
 
