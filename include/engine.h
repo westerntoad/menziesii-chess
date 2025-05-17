@@ -1,6 +1,8 @@
 #ifndef ENGINE_H // include guard
 #define ENGINE_H
 
+#define DEFAULT_TT_SIZE 16
+
 typedef struct {
     int infinite;
     int depth;
@@ -24,7 +26,7 @@ static const SearchParams PARAMS_DEFAULT = (SearchParams){
 
 void engine_init();
 void engine_quit();
-void init_engine_table(int size);
+void resize_engine_table(int mb_size);
 int set_position(char* fen, char** moves);
 void print_engine();
 void go_perft(int depth);

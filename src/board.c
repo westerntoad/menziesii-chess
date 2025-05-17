@@ -309,7 +309,6 @@ end:
         board->state_stack = realloc(board->state_stack, sizeof(StateFlags) * board->stack_capacity);
         if (board->state_stack == NULL) {
             fprintf(stderr, "Error allocating new state stack of size %d.\nExiting...", board->stack_capacity);
-            free(board->state_stack);
             free(board);
             exit(EXIT_FAILURE);
         }

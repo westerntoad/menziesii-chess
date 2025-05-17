@@ -1,12 +1,18 @@
+#include <string.h>
 #include "table.h"
+#include "types.h"
 #include "utils.h"
 
+static TTEntry* T_TABLE = NULL;
+static int TT_ENTRIES = 0;
+
+// Zobrist hashes
 static U64 ZOBRIST_PIECE_SQ[NUM_PIECES][NUM_SQUARES];
 static U64 ZOBRIST_SIDE[NUM_COLORS];
 static U64 ZOBRIST_CASTLING[16];
 static U64 ZOBRIST_EP[8];
 
-void init_table() {
+void init_zobrist() {
     int i, j;
     psrng_u64_seed(0ULL);
 
@@ -26,6 +32,48 @@ void init_table() {
     for (i = 0; i < 8; i++) {
         ZOBRIST_EP[i] = psrng_u64();
     }
+}
+
+void tt_set_size(int mb_size) {
+    if (T_TABLE)
+        free(T_TABLE);
+    
+    int byte_size = mb_size * 1024 * 1024;
+    TT_ENTRIES = byte_size / sizeof(TTEntry);
+    T_TABLE = malloc(sizeof(TTEntry) * TT_ENTRIES);
+    if (T_TABLE == NULL) {
+        fprintf(stderr, "Error allocating space for transposition table of size %dmb.\n", mb_size);
+        TT_ENTRIES = 0;
+    } else {
+        memset(T_TABLE, 0, TT_ENTRIES * sizeof(TTEntry));
+    }
+}
+
+TTEntry* tt_probe(U64 key) {
+    if (!TT_ENTRIES)
+        return NULL;
+
+    TTEntry* entry = &T_TABLE[key % TT_ENTRIES];
+
+    if (entry->key == key)
+        return entry;
+
+    return NULL;
+}
+
+void tt_save(U64 key, int depth, int score, Move best, char type) {
+    if (!TT_ENTRIES)
+        return;
+    
+    TTEntry* entry = &T_TABLE[key % TT_ENTRIES];
+
+    if ((entry->key == key) && (entry->depth > depth)) return;
+
+    entry->key = key;
+    entry->depth = depth;
+    entry->score= score;
+    entry->best = best;
+    entry->type = type;
 }
 
 U64 board_hash(Board* board) {

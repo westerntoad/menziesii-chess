@@ -99,7 +99,8 @@ void engine_init() {
     SEARCHING = 0;
     CURR_BOARD = NULL;
     init_move_lookup_tables();
-    init_engine_table(16);
+    init_zobrist();
+    resize_engine_table(DEFAULT_TT_SIZE);
 }
 
 void engine_quit() {
@@ -107,8 +108,8 @@ void engine_quit() {
         free_board(CURR_BOARD);
 }
 
-void init_engine_table(int size) {
-    init_table();
+void resize_engine_table(int mb_size) {
+    tt_set_size(mb_size);
 }
 
 int set_position(char* fen, char** moves) {

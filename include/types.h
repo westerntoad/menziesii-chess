@@ -61,6 +61,7 @@ enum enumSquare {
 };
 
 typedef uint64_t U64;
+typedef uint8_t  U8;
 typedef uint_fast8_t Sq;
 /*
  * A single move with to-from squares & addition move flags
