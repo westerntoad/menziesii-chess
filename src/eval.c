@@ -180,12 +180,12 @@ int alphabeta(Board *board, int alpha, int beta, int depth) {
             }
 
             if (should_stop_search(depth))
-                break;
+                return alpha;
 
             curr++;
         }
         U64 key = board_hash(board);
-        printf("%lx\n", key);
+        //printf("%lx\n", key);
         tt_save(key, depth, alpha, best_move, EXACT_NODE);
         return alpha;
     }

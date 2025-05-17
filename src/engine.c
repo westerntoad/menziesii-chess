@@ -22,7 +22,7 @@ static pthread_t SEARCH_THREAD;
 static Board *CURR_BOARD;
 static bool UCI_DEBUG_ON = false;
 
-static void print_tt_entry(TTEntry* entry, double time) {
+static void print_tt_entry(Board *board, TTEntry* entry, double time) {
     printf("info depth %d score ", entry->depth);
     if (abs(entry->score) > CHECKMATE_CP) {
         //printf("mate %d", ((pv->depth + 1) / 2) * (CURR_BOARD->side_to_move * (-2) + 1)); // TODO remove -1
@@ -32,6 +32,19 @@ static void print_tt_entry(TTEntry* entry, double time) {
     }
 
     // TODO pv
+    TTEntry* d_entry = entry;
+    Board* copy = copy_board(board);
+    if (entry->depth > 0)
+        printf(" pv");
+    
+    while (d_entry) {
+        printf(" ");
+        print_move(d_entry->best);
+
+        make_move(copy, d_entry->best);
+        d_entry = tt_probe(board_hash(copy));
+    }
+    free(copy);
     /*if (pv->depth > 0) {
         printf(" pv");
 
@@ -68,7 +81,7 @@ static void* search(void* arg) {
     do {
         curr_depth++;
         if (curr_depth > 1) {
-            print_tt_entry(tt_probe(hash), (double)(end - start) / CLOCKS_PER_SEC);
+            print_tt_entry(board, tt_probe(hash), (double)(end - start) / CLOCKS_PER_SEC);
         }
 
         NUM_NODES = 0;
@@ -80,7 +93,7 @@ static void* search(void* arg) {
 
     if (!STOP_SEARCH || curr_depth <= 1) {
         hash = board_hash(board);
-        print_tt_entry(tt_probe(hash), (double)(end - start) / CLOCKS_PER_SEC);
+        print_tt_entry(board, tt_probe(hash), (double)(end - start) / CLOCKS_PER_SEC);
     }
     STOP_SEARCH = 0;
 
