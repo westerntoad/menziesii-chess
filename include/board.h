@@ -14,6 +14,7 @@ typedef struct {
     StateFlags *state_stack;
     int stack_capacity;
     int ply_offset;
+    U64 hash;
 } Board;
 
 void make_move(Board *board, Move move);

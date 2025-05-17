@@ -7,10 +7,10 @@ static TTEntry* T_TABLE = NULL;
 static int TT_ENTRIES = 0;
 
 // Zobrist hashes
-static U64 ZOBRIST_PIECE_SQ[NUM_PIECES][NUM_SQUARES];
-static U64 ZOBRIST_SIDE[NUM_COLORS];
-static U64 ZOBRIST_CASTLING[16];
-static U64 ZOBRIST_EP[8];
+U64 ZOBRIST_PIECE_SQ[NUM_PIECES][NUM_SQUARES];
+U64 ZOBRIST_BLACK;
+U64 ZOBRIST_CASTLING[16];
+U64 ZOBRIST_EP[8];
 
 void init_zobrist() {
     int i, j;
@@ -19,18 +19,21 @@ void init_zobrist() {
     for (i = 0; i < NUM_PIECES; i++) {
         for (j = 0; j < NUM_SQUARES; j++) {
             ZOBRIST_PIECE_SQ[i][j] = psrng_u64();
+            //ZOBRIST_PIECE_SQ[i][j] = 0;
         }
     }
 
-    ZOBRIST_SIDE[WHITE] = psrng_u64();
-    ZOBRIST_SIDE[BLACK] = psrng_u64();
+    ZOBRIST_BLACK = psrng_u64();
+    //ZOBRIST_BLACK = 0;
 
     for (i = 0; i < 16; i++) {
         ZOBRIST_CASTLING[i] = psrng_u64();
+        //ZOBRIST_CASTLING[i] = 0;
     }
 
     for (i = 0; i < 8; i++) {
         ZOBRIST_EP[i] = psrng_u64();
+        //ZOBRIST_EP[i] = 0;
     }
 }
 
@@ -61,7 +64,7 @@ TTEntry* tt_probe(U64 key) {
     return NULL;
 }
 
-void tt_save(U64 key, int depth, int score, Move best, char type) {
+void tt_save(U64 key, U8 depth, int score, Move best, char type) {
     if (!TT_ENTRIES)
         return;
     
@@ -91,7 +94,9 @@ U64 board_hash(Board* board) {
         }
     }
 
-    hash ^= ZOBRIST_SIDE[board->side_to_move];
+    if (board->side_to_move == BLACK)
+        hash ^= ZOBRIST_BLACK;
+
     hash ^= ZOBRIST_CASTLING[(state >> 27) & 0xf];
     if (state & 0x04000000)
         hash ^= ZOBRIST_EP[((state >> 20) & 0x3f) % 8];
@@ -108,8 +113,7 @@ void print_table() {
         }
     }
 
-    printf("%lx\n", ZOBRIST_SIDE[WHITE]);
-    printf("%lx\n", ZOBRIST_SIDE[BLACK]);
+    printf("%lx\n", ZOBRIST_BLACK);
 
     for (i = 0; i < 16; i++) {
         printf("%lx\n", ZOBRIST_CASTLING[i]);

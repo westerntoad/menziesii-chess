@@ -13,7 +13,7 @@
 
 #define CHECKMATE_CP (2 << 15)
 
-U64 eval(Board *board, int depth);
+U64 eval(Board *board, U8 depth);
 int piece_eval(Board *board);
 void start_timer();
 

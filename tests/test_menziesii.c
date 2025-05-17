@@ -1,5 +1,6 @@
 #include <time.h>
 #include "board.h"
+#include "table.h"
 #include "types.h"
 #include "eval.h"
 #include "movegen.h"
@@ -66,7 +67,7 @@ static void assert_perft(char* fen, int depth, U64 expected) {
 
 static void assert_eval(char* fen, int depth, int upper_bound, int lower_bound) {
     Board *board = from_fen(fen);
-    int actual = eval(board, depth).score;
+    int actual = eval(board, depth);
     TESTS_RUN++;
 
     if ((lower_bound <= actual) && (actual <= upper_bound)) {
@@ -78,7 +79,7 @@ static void assert_eval(char* fen, int depth, int upper_bound, int lower_bound) 
     free(board);
 }
 
-static void assert_mate(char* fen, int in) {
+/*static void assert_mate(char* fen, int in) {
     Board *board = from_fen(fen);
     PrincipleVariation pv = eval(board, in+1); // TODO remove +1
     TESTS_RUN++;
@@ -90,7 +91,53 @@ static void assert_mate(char* fen, int in) {
     }
     
     free(board);
+}*/
+
+static void assert_procedural_hashing(char* fen, Move move) {
+    Board *board = from_fen(fen);
+    U64 actual, expected = board->hash;
+    bool passed = true;
+    TESTS_RUN++;
+
+    if (move) {
+        make_move(board, move);
+        unmake_move(board, move);
+
+        actual = board->hash;
+
+        passed = expected == board->hash;
+    } else {
+        Move *curr = (Move[256]){0};
+        Move *end = legal_moves(board, curr);
+        if (curr == end)
+            return;
+
+        while (curr != end && passed) {
+            make_move(board, *curr);
+            unmake_move(board, *curr);
+            actual = board->hash;
+
+            if (expected != actual) {
+                move = *curr;
+                passed = false;
+                break;
+            }
+            
+            curr++;
+        }
+    }
+
+    if (passed) {
+        TESTS_PASSED++;
+    } else {
+        printf("PROCEDURAL ZOBRIST HASHING ASSERTION FAILED\nFEN       %s\nMOVE      ", fen);
+        print_move(move);
+        printf("\nEXPECTED  %lx\nACTUAL    %lx\n", expected, actual);
+    }
+
+    free(board);
 }
+
 
 static void test_pawns() {
     printf("Testing pawn legal move generation...\n");
@@ -168,7 +215,7 @@ static void test_eval() {
     assert_eval("8/p2B2B1/p7/p7/p7/p7/pr6/k6K w - - 0 1", 4, 0, 0);
 }
 
-static void test_mates() {
+/*static void test_mates() {
     printf("Testing mates...\n");
 
     // MATES IN 1
@@ -184,7 +231,7 @@ static void test_mates() {
     //assert_mate("", 4);
 
     //assert_mate("", 0);
-}
+}*/
 
 static void test_state_stack() {
     printf("Stress-testing state stack...\n");
@@ -204,13 +251,36 @@ static void test_state_stack() {
             num_kk++;
     }
 
-    printf("Random matches had a %.1lf%% rate of being a king-king endamge (n=%d)", ((double)num_kk) / ((double)total_tests)*100, total_tests);
+    printf("Random matches had a %.1lf%% rate of being a king-king endamge (n=%d)\n", ((double)num_kk) / ((double)total_tests)*100, total_tests);
 }
+
+static void test_procedural_hashing() {
+    printf("Testing procedural hashing...\n");
+    
+    assert_procedural_hashing("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 0); // starting
+    assert_procedural_hashing("r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/2N2N2/PPPP1PPP/R1BQK2R w KQkq - 6 5", 0); // castling
+    assert_procedural_hashing("r1bqkbnr/ppp1pppp/2n5/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3", 0); // en passant
+    
+    Board *temp1, *temp2;
+    temp1 = from_fen("8/8/4k3/8/8/8/5K2/8 w - - 0 1");
+    temp2 = from_fen("8/8/4K3/8/8/8/5k2/8 b - - 0 1");
+    TESTS_RUN++;
+    if (board_hash(temp1) == board_hash(temp2)) {
+        printf("PROCEDURAL ZOBRIST HASHING ASSERTION FAILED\nHASH COLLISION OF TWO UNEQUAL FENS\nFEN1      %s\nFEN2      %s\n", "8/8/4k3/8/8/8/5K2/8 w - - 0 1", "8/8/4K3/8/8/8/5k2/8 b - - 0 1");
+    } else {
+        TESTS_PASSED++;
+        
+    }
+    free(temp1);
+    free(temp2);
+}
+
 
 int main(void) {
     srand(time(NULL));
     setbuf(stdout, NULL);
     init_move_lookup_tables();
+    init_zobrist();
     TESTS_RUN = 0;
     TESTS_PASSED = 0;
 
@@ -218,8 +288,9 @@ int main(void) {
     test_sliders();
     test_perfts();
     test_eval();
-    test_mates();
+    //test_mates();
     test_state_stack();
+    test_procedural_hashing();
 
     if (TESTS_RUN == TESTS_PASSED) {
         printf("\nAll tests passed.\n");

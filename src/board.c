@@ -5,6 +5,7 @@
 #include <wchar.h>  // used for unicode printing
 #include "board.h"
 #include "movegen.h"
+#include "table.h"
 #include "utils.h" // includes <stdio.h>
 
 #define INITIAL_MOVE_CAPACITY 128
@@ -29,6 +30,7 @@ Board* copy_board(Board *board) { // DEBUG
     copy->ply = board->ply;
     copy->side_to_move = board->side_to_move;
     copy->ply_offset = board->ply_offset;
+    copy->hash = board->hash;
 
     return copy;
 }
@@ -186,15 +188,24 @@ void make_move(Board *board, Move move) {
     U64 from = 1ULL << get_from(move);
     U64 to = 1ULL << get_to(move);
     U64 aux1, aux2;
+    Sq sq;
     bool curr_color = board->side_to_move;
     StateFlags next_state = board->state_stack[board->ply];
+    StateFlags prev_state = next_state;
     int i, j;
+    
+    if (prev_state & 0x04000000) {
+        //printf("REMOVING OLD EP  %d\n", ((prev_state >> 20) & 0x3f) % 8); // DEBUG
+        // update hash to remove previous ep target
+        board->hash ^= ZOBRIST_EP[((prev_state >> 20) & 0x3f) % 8];
+    }
 
     next_state &= 0xf801ffff; // clear previous captured piece & ep_target
     next_state++;
 
     board->ply++;
     board->side_to_move ^= 1;
+    board->hash ^= ZOBRIST_BLACK; // update hash
 
     if (((move >> 12) & 0b1110) == 0b10) { // check if castle
         from = 0x8100000000000081ULL; // rook origin
@@ -233,6 +244,11 @@ void make_move(Board *board, Move move) {
         board->pieces[KING_IDX] |= aux2;
         board->colors[curr_color] |= to | aux2;
 
+        board->hash ^= ZOBRIST_PIECE_SQ[ROOK_IDX][LOG2(from)]; // update hash
+        board->hash ^= ZOBRIST_PIECE_SQ[KING_IDX][LOG2(aux1)];
+        board->hash ^= ZOBRIST_PIECE_SQ[ROOK_IDX][LOG2(to)];
+        board->hash ^= ZOBRIST_PIECE_SQ[KING_IDX][LOG2(aux2)];
+
         goto end; // gosh
     }
 
@@ -248,16 +264,22 @@ void make_move(Board *board, Move move) {
     if (move >> 12 == 5) { // check if ep capture
         aux1 = curr_color ? nort_one(to) : sout_one(to); // ep-captured pawn
         
-        board->pieces[PAWN_IDX] &= ~aux1;
+        board->pieces[PAWN_IDX] &= ~aux1; // clear ep_captured pawn
         board->colors[curr_color ^ 1] &= ~aux1;
+
+        //printf("CLEARING CAPTURED EP PAWN\n"); // DEBUG
+        board->hash ^= ZOBRIST_PIECE_SQ[PAWN_IDX][LOG2(aux1)]; // update hash
     } else if (move & 0x4000) { // check if capture
         for (j = 0; j < NUM_PIECES; j++) {
             if (board->pieces[j] & to)
                 break;
         }
 
-        board->pieces[j] &= ~to;
+        board->pieces[j] &= ~to; // clear captured piece
         board->colors[curr_color ^ 1] &= ~to;
+
+        //printf("CLEARING CAPTURED PIECE\n"); // DEBUG
+        board->hash ^= ZOBRIST_PIECE_SQ[j][LOG2(to)]; // update hash
 
         next_state |= j << 17; // store captured piece-index
         next_state &= 0xfffe0000; // clear half-move clock
@@ -267,10 +289,13 @@ void make_move(Board *board, Move move) {
     if (move >> 12 == 1) { // check if double pawn push
         next_state |= 0x04000000; // set ep target exist
         if (curr_color) { // if black
-            next_state |= LOG2(nort_one(to)) << 20;
+            sq = LOG2(nort_one(to));
         } else {
-            next_state |= LOG2(sout_one(to)) << 20;
+            sq = LOG2(sout_one(to));
         }
+        next_state |= sq << 20;
+        //printf("SETTING EP TARGET %d\n", sq%8); // DEBUG
+        board->hash ^= ZOBRIST_EP[sq%8]; // update hash
     } else {
         // if not double pawn push, clear ep target mask
         next_state &= 0xfbffffff;
@@ -288,6 +313,8 @@ void make_move(Board *board, Move move) {
     board->pieces[i] &= ~from;
     board->colors[curr_color] &= ~from;
 
+    board->hash ^= ZOBRIST_PIECE_SQ[i][LOG2(from)]; // update hash
+
     if (move & 0x8000) { // check if promotion
         j = (move >> 12) & 3;
         if (j == 0)
@@ -302,6 +329,7 @@ void make_move(Board *board, Move move) {
 
     board->pieces[i] |= to;
     board->colors[curr_color] |= to;
+    board->hash ^= ZOBRIST_PIECE_SQ[i][LOG2(to)]; // update hash
 
 end:
     if (board->ply >= board->stack_capacity) {
@@ -314,6 +342,11 @@ end:
         }
     }
     board->state_stack[board->ply] = next_state;
+    // update hash for castling
+    prev_state = (prev_state >> 27) & 0xf;
+    next_state = (next_state >> 27) & 0xf;
+    board->hash ^= ZOBRIST_CASTLING[prev_state];
+    board->hash ^= ZOBRIST_CASTLING[next_state];
 }
 
 void unmake_move(Board *board, Move move) {
@@ -321,9 +354,22 @@ void unmake_move(Board *board, Move move) {
     U64 to = 1ULL << get_to(move);
     U64 aux1, aux2;
     board->side_to_move ^= 1;
+    board->hash ^= ZOBRIST_BLACK; // update hash
     bool curr_color = board->side_to_move;
     int i, captured_piece_idx;
-    StateFlags next_state = board->state_stack[board->ply];
+    StateFlags prev_state = board->state_stack[board->ply-1];
+    StateFlags next_state = board->state_stack[board->ply  ];
+
+    if (next_state & 0x04000000) {
+        // update hash to remove previous ep target
+        board->hash ^= ZOBRIST_EP[((next_state >> 20) & 0x3f) % 8];
+    }
+
+    if (prev_state & 0x04000000) {
+        // update hash to remove previous ep target
+        board->hash ^= ZOBRIST_EP[((prev_state >> 20) & 0x3f) % 8];
+    }
+
     board->ply--;
 
     if (((move >> 12) & 0b1110) == 0b10) { // check if castle
@@ -361,7 +407,12 @@ void unmake_move(Board *board, Move move) {
         board->pieces[KING_IDX] |= aux1;
         board->colors[curr_color] |= from | aux1;
 
-        return;
+        board->hash ^= ZOBRIST_PIECE_SQ[ROOK_IDX][LOG2(from)]; // update hash
+        board->hash ^= ZOBRIST_PIECE_SQ[KING_IDX][LOG2(aux1)];
+        board->hash ^= ZOBRIST_PIECE_SQ[ROOK_IDX][LOG2(to)];
+        board->hash ^= ZOBRIST_PIECE_SQ[KING_IDX][LOG2(aux2)];
+
+        goto end;
     }
 
 
@@ -373,17 +424,22 @@ void unmake_move(Board *board, Move move) {
 
     board->pieces[i] &= ~to;
     board->colors[curr_color] &= ~to;
+    board->hash ^= ZOBRIST_PIECE_SQ[i][LOG2(to)]; // update hash
     
     if (move >> 12 == 5) { // check if ep capture
         aux1 = curr_color ? nort_one(to) : sout_one(to); // ep-captured pawn
         
         board->pieces[PAWN_IDX] |= aux1;
         board->colors[curr_color ^ 1] |= aux1;
+
+        board->hash ^= ZOBRIST_PIECE_SQ[PAWN_IDX][LOG2(aux1)]; // update hash
     } else if (move & 0x4000) { // check if capture
         captured_piece_idx = (next_state >> 17) & 0x07; // restore captured piece from state_stack
 
         board->pieces[captured_piece_idx] |= to;
         board->colors[curr_color ^ 1] |= to;
+
+        board->hash ^= ZOBRIST_PIECE_SQ[captured_piece_idx][LOG2(to)]; // update hash
     }
 
 
@@ -392,6 +448,13 @@ void unmake_move(Board *board, Move move) {
 
     board->pieces[i] |= from;
     board->colors[curr_color] |= from;
+    board->hash ^= ZOBRIST_PIECE_SQ[i][LOG2(from)]; // update hash
+end:
+    // update hash for castling
+    next_state = (next_state >> 27) & 0xf;
+    prev_state = (prev_state >> 27) & 0xf;
+    board->hash ^= ZOBRIST_CASTLING[next_state];
+    board->hash ^= ZOBRIST_CASTLING[prev_state];
 }
 
 Move* legal_moves(Board *board, Move *given) {
@@ -815,6 +878,8 @@ Board* from_fen(char* fen) {
     if (board->side_to_move == BLACK)
         board->ply_offset++;
     for (; fen[i] != ' '; i++);
+
+    board->hash = board_hash(board);
 
     return board;
 }

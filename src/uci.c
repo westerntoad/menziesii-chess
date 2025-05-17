@@ -214,6 +214,14 @@ int uci(void) {
                     engine_set_debug(false);
                     break;
                 }
+            } else if (has(&ptr, "move")) {
+                char* move = ptr;
+                next_token(&ptr);
+                engine_move(move);
+                break;
+            } else if (has(&ptr, "unmove")) {
+                engine_unmove();
+                break;
             } else if (has(&ptr, "quit")) {
                 engine_quit();
 

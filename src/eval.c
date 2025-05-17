@@ -87,7 +87,7 @@ static const int PIECE_SQUARE_TABLE[NUM_PIECES + 1][NUM_SQUARES] = {
     }
 };
 
-static int should_stop_search(int depth) {
+static int should_stop_search(U8 depth) {
     if (STOP_SEARCH)
         return 1;
 
@@ -145,7 +145,7 @@ int quiesce(Board *board, int alpha, int beta) {
     return best;
 }
 
-int alphabeta(Board *board, int alpha, int beta, int depth) {
+int alphabeta(Board *board, int alpha, int beta, U8 depth) {
     NUM_NODES++;
     
     if (depth == 0) {
@@ -195,7 +195,7 @@ void start_timer() {
     clock_gettime(CLOCK_MONOTONIC, &START_TIME);
 }
 
-U64 eval(Board *board, int depth) {
+U64 eval(Board *board, U8 depth) {
     alphabeta(board, -INF, INF, depth);
     return board_hash(board);
 }

@@ -22,6 +22,11 @@ static pthread_t SEARCH_THREAD;
 static Board *CURR_BOARD;
 static bool UCI_DEBUG_ON = false;
 
+// ~ debug ~
+static Move MOVE_HISTORY[64];
+static int MOVE_HISTORY_IDX;
+// ~ debug ~
+
 static void print_tt_entry(Board *board, TTEntry* entry, double time) {
     printf("info depth %d score ", entry->depth);
     if (abs(entry->score) > CHECKMATE_CP) {
@@ -65,7 +70,8 @@ static void print_tt_entry(Board *board, TTEntry* entry, double time) {
 
     printf("\n");
     if (UCI_DEBUG_ON) {
-        printf("info string HASH %lx\n", entry->key);
+        printf("info string HASH 1 %lx\n", board_hash(board));
+        printf("info string HASH 2 %lx\n", board->hash);
     }
 }
 
@@ -73,7 +79,7 @@ static void* search(void* arg) {
     Board *board = copy_board(CURR_BOARD);
     SearchParams params = *(SearchParams*)arg;
     SEARCH_TIME = params.movetime;
-    int curr_depth = 0;
+    U8 curr_depth = 0;
     U64 hash;
     clock_t start, end;
 
@@ -89,7 +95,7 @@ static void* search(void* arg) {
         hash = eval(board, curr_depth);
         end = clock();
         
-    } while ((params.depth < 0 || (curr_depth < params.depth)) && !STOP_SEARCH);
+    } while (curr_depth < params.depth && !STOP_SEARCH);
 
     if (!STOP_SEARCH || curr_depth <= 1) {
         hash = board_hash(board);
@@ -112,6 +118,11 @@ static void* search(void* arg) {
 }
 
 void engine_init() {
+    // ~ debug ~
+    memset(MOVE_HISTORY, 0, sizeof(Move) * 64);
+    MOVE_HISTORY_IDX = 0;
+    // ~ debug ~
+
     STOP_SEARCH = 0;
     SEARCHING = 0;
     CURR_BOARD = NULL;
@@ -122,6 +133,28 @@ void engine_init() {
 
 void engine_set_debug(bool mode) {
     UCI_DEBUG_ON = mode;
+}
+
+bool engine_is_debug() {
+    return UCI_DEBUG_ON;
+}
+
+void engine_move(char* move_str) {
+    if (!CURR_BOARD)
+        return;
+
+    Move move = move_from_str(CURR_BOARD, move_str);
+    make_move(CURR_BOARD, move);
+    MOVE_HISTORY[MOVE_HISTORY_IDX] = move;
+    MOVE_HISTORY_IDX++;
+}
+
+void engine_unmove() {
+    if (!CURR_BOARD || !MOVE_HISTORY_IDX)
+        return;
+
+    MOVE_HISTORY_IDX--;
+    unmake_move(CURR_BOARD, MOVE_HISTORY[MOVE_HISTORY_IDX]);
 }
 
 void engine_quit() {
@@ -157,8 +190,11 @@ void print_engine() {
     if (!CURR_BOARD)
         return;
 
-    printf("FEN:  %s\n", to_fen(CURR_BOARD));
-    printf("Hash: %lx\n", board_hash(CURR_BOARD));
+    printf("FEN: %s\n", to_fen(CURR_BOARD));
+    if (UCI_DEBUG_ON) {
+        printf("Internl Hash:  %lx\n", CURR_BOARD->hash);
+        printf("External Hash: %lx\n", board_hash(CURR_BOARD));
+    }
     print_board(CURR_BOARD);
 
 }

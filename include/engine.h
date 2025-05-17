@@ -7,7 +7,7 @@
 
 typedef struct {
     int infinite;
-    int depth;
+    U8  depth;
     int movetime;
     int wtime;
     int btime;
@@ -28,6 +28,9 @@ static const SearchParams PARAMS_DEFAULT = (SearchParams){
 
 void engine_init();
 void engine_set_debug(bool mode);
+bool engine_is_debug();
+void engine_move(char* move_str);
+void engine_unmove();
 void engine_quit();
 void resize_engine_table(int mb_size);
 int set_position(char* fen, char** moves);
