@@ -11,16 +11,17 @@ typedef struct {
     U64 pieces[NUM_PIECES];
     int ply;
     bool side_to_move;
-    StateFlags *state_stack;
     int stack_capacity;
     int ply_offset;
-    U64 hash;
+    StateFlags *state_stack;
+    U64 *hash_stack;
 } Board;
 
 void make_move(Board *board, Move move);
 void unmake_move(Board *board, Move move);
 Move* legal_moves(Board *board, Move *list);
 bool is_in_check(Board *board);
+U64 get_hash(Board *board);
 Move random_move(Board *board);
 Move move_from_str(Board *board, char* str);
 U64 perft(Board *board, int depth);

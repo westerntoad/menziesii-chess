@@ -28,7 +28,7 @@ static int MOVE_HISTORY_IDX;
 // ~ debug ~
 
 static void print_info(Board* board, double time) {
-    TTEntry* entry = tt_probe(board->hash);
+    TTEntry* entry = tt_probe(get_hash(board));
     if (!entry)
         return;
 
@@ -71,7 +71,7 @@ static void* search(void* arg) {
     SEARCH_TIME = params.movetime;
     TTEntry* entry;
     U8 curr_depth = 0;
-    U64 hash = board->hash;
+    U64 hash = get_hash(board);
     Move best = 0, ponder = 0;
     clock_t start = clock(), end = clock();
 
@@ -88,7 +88,7 @@ static void* search(void* arg) {
         if (entry) {
             best = entry->best;
             make_move(board, best);
-            entry = tt_probe(board->hash);
+            entry = tt_probe(get_hash(board));
             if (entry)
                 ponder = entry->best;
             unmake_move(board, best);
@@ -189,7 +189,7 @@ void print_engine() {
 
     printf("FEN: %s\n", to_fen(CURR_BOARD));
     if (UCI_DEBUG_ON) {
-        printf("Internl Hash:  %lx\n", CURR_BOARD->hash);
+        printf("Internl Hash:  %lx\n", get_hash(CURR_BOARD));
         printf("External Hash: %lx\n", board_hash(CURR_BOARD));
     }
     print_board(CURR_BOARD);
