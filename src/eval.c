@@ -180,7 +180,11 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth) {
     bool preempted = false;
     NUM_NODES++;
     
+    if (is_threefold(board)) {
+        return 0;
+    }
     if (depth == 0)
+
         return quiesce(board, alpha, beta);
 
     TTEntry* tt_entry = tt_probe(get_hash(board));
@@ -206,10 +210,6 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth) {
             return 0; // TODO contempt score
         }
     }
-    if (is_threefold(board)) {
-        printf("FOUND THREEFOLD\n");
-        return 0;
-    }
 
     if (is_in_check(board))
         depth++;
@@ -218,6 +218,24 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth) {
         reorder_moves(curr, end - curr, tt_entry->best);
 
     Move best_move = *curr;
+
+    // HELPFUL FOR FINDING HASH COLLISIONS
+    /*Move* temp = curr;
+    bool found = false;
+    while (tt_entry && temp < end) {
+        if (tt_entry->best == *temp) {
+            found = true;
+            break;
+        }
+        temp++;
+    }
+    if (tt_entry && !found) {
+        print_move(tt_entry->best);
+        printf("\nFEN: %s\n", to_fen(board));
+        print_board(board);
+        printf("\n\n");
+        STOP_SEARCH = true;
+    }*/
 
     char flag = ALL_NODE;
 

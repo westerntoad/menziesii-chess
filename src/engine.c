@@ -33,11 +33,13 @@ static void print_info(Board* board, double time) {
     if (!entry)
         return;
 
+    int side_coeff = (CURR_BOARD->side_to_move * (-2) + 1);
+
     printf("info depth %d score ", entry->depth);
     if (abs(entry->score) > CHECKMATE_CP) {
-        printf("mate %d", (entry->depth / 2) * (CURR_BOARD->side_to_move * (-2) + 1));
+        printf("mate %d", (entry->depth / 2) * ((entry->score > 0) - (entry->score < 0)));
     } else {
-        printf("cp %d", entry->score);
+        printf("cp %d", entry->score * side_coeff);
     }
 
     TTEntry* d_entry = entry;
