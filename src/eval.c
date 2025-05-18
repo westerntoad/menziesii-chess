@@ -216,7 +216,7 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth) {
     char flag = ALL_NODE;
 
     // HELPFUL FOR FINDING HASH COLLISIONS
-    /*Move* temp = curr;
+    Move* temp = curr;
     bool found = false;
     while (tt_entry && temp < end) {
         if (tt_entry->best == *temp) {
@@ -231,7 +231,7 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth) {
         print_board(board);
         printf("\n\n");
         STOP_SEARCH = true;
-    }*/
+    }
 
     while (curr < end) {
         if (should_stop_search(depth)) {

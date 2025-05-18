@@ -152,6 +152,21 @@ static void assert_procedural_hashing(char* fen, Move move) {
     free(board);
 }
 
+static void assert_unequal_hashes(char* fen1, char* fen2) {
+    Board *board1 = from_fen(fen1);
+    Board *board2 = from_fen(fen2);
+    TESTS_RUN++;
+
+    if (board1->hash != board2->hash) {
+        TESTS_PASSED++;
+    } else {
+        printf("PROCEDURAL ZOBRIST HASHING ASSERTION FAILED - HASH COLLISION OF TWO UNEQUAL FENS\nFEN1      %s\nFEN2      %s\n", fen1, fen2);
+    }
+
+    free(board1);
+    free(board2);
+}
+
 
 static void test_pawns() {
     printf("Testing pawn legal move generation...\n");
@@ -275,32 +290,8 @@ static void test_procedural_hashing() {
     assert_procedural_hashing("r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/2N2N2/PPPP1PPP/R1BQK2R w KQkq - 6 5", 0); // castling
     assert_procedural_hashing("r1bqkbnr/ppp1pppp/2n5/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3", 0); // en passant
     
-    Board *temp1, *temp2;
-    temp1 = from_fen("8/8/4k3/8/8/8/5K2/8 w - - 0 1");
-    temp2 = from_fen("8/8/4K3/8/8/8/5k2/8 b - - 0 1");
-    TESTS_RUN++;
-    if (board_hash(temp1) == board_hash(temp2)) {
-        printf("PROCEDURAL ZOBRIST HASHING ASSERTION FAILED\nHASH COLLISION OF TWO UNEQUAL FENS\nFEN1      %s\nFEN2      %s\n", "8/8/4k3/8/8/8/5K2/8 w - - 0 1", "8/8/4K3/8/8/8/5k2/8 b - - 0 1");
-    } else {
-        TESTS_PASSED++;
-        
-    }
-
-    free(temp1);
-    free(temp2);
-
-    char* fen1 = "rnbqkbnr/p1pppppp/8/8/p1P5/8/1P1PPPPP/RNBQKBNR b KQkq - 0 3";
-    char* fen2 = "rnbqkbnr/p1pppppp/8/8/p1p5/8/1P1PPPPP/RNBQKBNR b KQkq - 0 1";
-    temp1 = from_fen(fen1);
-    temp2 = from_fen(fen2);
-    TESTS_RUN++;
-    if (board_hash(temp1) == board_hash(temp2)) {
-        printf("PROCEDURAL ZOBRIST HASHING ASSERTION FAILED\nHASH COLLISION OF TWO UNEQUAL FENS\nFEN1      %s\nFEN2      %s\n", fen1, fen2);
-    } else {
-        TESTS_PASSED++;
-        
-    }
-
+    assert_unequal_hashes("8/8/4K3/8/8/8/5k2/8 b - - 0 1", "8/8/4K3/8/8/8/5k2/8 b - - 0 1");
+    assert_unequal_hashes("rnbqkbnr/p1pppppp/8/8/p1P5/8/1P1PPPPP/RNBQKBNR b KQkq - 0 3", "rnbqkbnr/p1pppppp/8/8/p1p5/8/1P1PPPPP/RNBQKBNR b KQkq - 0 1");
 }
 
 
