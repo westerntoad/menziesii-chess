@@ -118,8 +118,10 @@ void reorder_moves(Move* list, int n, Move pv) {
 
     for (i = 0; i < n && list[i] != pv; i++);
 
-    if (i == n)
+    if (i == n) {
+        fprintf(stderr, "ERROR: principle variation move not present in legal move list");
         return;
+    }
 
     Move temp = list[0];
     list[0] = pv;
@@ -181,7 +183,7 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth) {
     if (depth == 0)
         return quiesce(board, alpha, beta);
 
-    TTEntry* tt_entry = tt_probe(board->hash);
+    TTEntry* tt_entry = tt_probe(get_hash(board));
     if (tt_entry && (tt_entry->depth >= depth || abs(tt_entry->score) > CHECKMATE_CP)) {
         if (tt_entry->type == EXACT_NODE) {
             return tt_entry->score;
@@ -204,6 +206,10 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth) {
             return 0; // TODO contempt score
         }
     }
+    if (is_threefold(board)) {
+        printf("FOUND THREEFOLD\n");
+        return 0;
+    }
 
     if (is_in_check(board))
         depth++;
@@ -214,24 +220,6 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth) {
     Move best_move = *curr;
 
     char flag = ALL_NODE;
-
-    // HELPFUL FOR FINDING HASH COLLISIONS
-    /*Move* temp = curr;
-    bool found = false;
-    while (tt_entry && temp < end) {
-        if (tt_entry->best == *temp) {
-            found = true;
-            break;
-        }
-        temp++;
-    }
-    if (tt_entry && !found) {
-        print_move(tt_entry->best);
-        printf("\nFEN: %s\n", to_fen(board));
-        print_board(board);
-        printf("\n\n");
-        STOP_SEARCH = true;
-    }*/
 
     while (curr < end) {
         if (should_stop_search(depth)) {
@@ -244,7 +232,7 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth) {
         unmake_move(board, *curr);
 
         if (score >= beta) {
-            tt_save(board->hash, depth, beta, best_move, CUT_NODE);
+            tt_save(get_hash(board), depth, beta, best_move, CUT_NODE);
             return beta;
         }
         
@@ -258,7 +246,7 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth) {
     }
 
     if (!preempted)
-        tt_save(board->hash, depth, alpha, best_move, flag);
+        tt_save(get_hash(board), depth, alpha, best_move, flag);
 
     return alpha;
 }

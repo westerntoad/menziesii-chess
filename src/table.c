@@ -7,19 +7,20 @@ static TTEntry* T_TABLE = NULL;
 static U64 TT_ENTRIES = 0;
 
 // Zobrist hashes
-U64 ZOBRIST_PIECE_SQ[NUM_PIECES][NUM_SQUARES];
+U64 ZOBRIST_PIECE_SQ[NUM_PIECES][NUM_COLORS][NUM_SQUARES];
 U64 ZOBRIST_BLACK;
 U64 ZOBRIST_CASTLING[16];
 U64 ZOBRIST_EP[8];
 
 void init_zobrist() {
-    int i, j;
+    int i, j, k;
     psrng_u64_seed(0ULL);
 
     for (i = 0; i < NUM_PIECES; i++) {
-        for (j = 0; j < NUM_SQUARES; j++) {
-            ZOBRIST_PIECE_SQ[i][j] = psrng_u64();
-            //ZOBRIST_PIECE_SQ[i][j] = 0;
+        for (j = 0; j < NUM_COLORS; j++) {
+            for (k = 0; k < NUM_SQUARES; k++) {
+                ZOBRIST_PIECE_SQ[i][j][k] = psrng_u64();
+            }
         }
     }
 
@@ -86,11 +87,13 @@ U64 board_hash(Board* board) {
     StateFlags state = board->state_stack[board->ply];
 
     for (int i = 0; i < NUM_PIECES; i++) {
-        bb = board->pieces[i];
+        for (int j = 0; j < NUM_COLORS; j++) {
+            bb = board->pieces[i] & board->colors[j];
 
-        while (bb) {
-            sq = LOG2(pop_lsb(&bb));
-            hash ^= ZOBRIST_PIECE_SQ[i][sq];
+            while (bb) {
+                sq = LOG2(pop_lsb(&bb));
+                hash ^= ZOBRIST_PIECE_SQ[i][j][sq];
+            }
         }
     }
 
@@ -134,7 +137,7 @@ void print_table() {
 
     for (i = 0; i < NUM_PIECES; i++) {
         for (j = 0; j < NUM_SQUARES; j++) {
-            printf("%lx\n", ZOBRIST_PIECE_SQ[i][j]);
+            printf("%lx\n", ZOBRIST_PIECE_SQ[i][0][j]); // whatever
         }
     }
 

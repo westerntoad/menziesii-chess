@@ -199,7 +199,6 @@ void make_move(Board *board, Move move) {
     int i, j;
     
     if (prev_state & 0x04000000) {
-        //printf("REMOVING OLD EP  %d\n", ((prev_state >> 20) & 0x3f) % 8); // DEBUG
         // update hash to remove previous ep target
         next_hash ^= ZOBRIST_EP[((prev_state >> 20) & 0x3f) % 8];
     }
@@ -248,10 +247,10 @@ void make_move(Board *board, Move move) {
         board->pieces[KING_IDX] |= aux2;
         board->colors[curr_color] |= to | aux2;
 
-        next_hash ^= ZOBRIST_PIECE_SQ[ROOK_IDX][LOG2(from)]; // update hash
-        next_hash ^= ZOBRIST_PIECE_SQ[KING_IDX][LOG2(aux1)];
-        next_hash ^= ZOBRIST_PIECE_SQ[ROOK_IDX][LOG2(to)];
-        next_hash ^= ZOBRIST_PIECE_SQ[KING_IDX][LOG2(aux2)];
+        next_hash ^= ZOBRIST_PIECE_SQ[ROOK_IDX][curr_color][LOG2(from)]; // update hash
+        next_hash ^= ZOBRIST_PIECE_SQ[KING_IDX][curr_color][LOG2(aux1)];
+        next_hash ^= ZOBRIST_PIECE_SQ[ROOK_IDX][curr_color][LOG2(to)];
+        next_hash ^= ZOBRIST_PIECE_SQ[KING_IDX][curr_color][LOG2(aux2)];
 
         goto end; // gosh
     }
@@ -271,8 +270,7 @@ void make_move(Board *board, Move move) {
         board->pieces[PAWN_IDX] &= ~aux1; // clear ep_captured pawn
         board->colors[curr_color ^ 1] &= ~aux1;
 
-        //printf("CLEARING CAPTURED EP PAWN\n"); // DEBUG
-        next_hash ^= ZOBRIST_PIECE_SQ[PAWN_IDX][LOG2(aux1)]; // update hash
+        next_hash ^= ZOBRIST_PIECE_SQ[PAWN_IDX][curr_color ^ 1][LOG2(aux1)]; // update hash
     } else if (move & 0x4000) { // check if capture
         for (j = 0; j < NUM_PIECES; j++) {
             if (board->pieces[j] & to)
@@ -282,8 +280,7 @@ void make_move(Board *board, Move move) {
         board->pieces[j] &= ~to; // clear captured piece
         board->colors[curr_color ^ 1] &= ~to;
 
-        //printf("CLEARING CAPTURED PIECE\n"); // DEBUG
-        next_hash ^= ZOBRIST_PIECE_SQ[j][LOG2(to)]; // update hash
+        next_hash ^= ZOBRIST_PIECE_SQ[j][curr_color ^ 1][LOG2(to)]; // update hash
 
         next_state |= j << 17; // store captured piece-index
         next_state &= 0xfffe0000; // clear half-move clock
@@ -298,7 +295,6 @@ void make_move(Board *board, Move move) {
             sq = LOG2(sout_one(to));
         }
         next_state |= sq << 20;
-        //printf("SETTING EP TARGET %d\n", sq%8); // DEBUG
         next_hash ^= ZOBRIST_EP[sq%8]; // update hash
     } else {
         // if not double pawn push, clear ep target mask
@@ -317,7 +313,7 @@ void make_move(Board *board, Move move) {
     board->pieces[i] &= ~from;
     board->colors[curr_color] &= ~from;
 
-    next_hash ^= ZOBRIST_PIECE_SQ[i][LOG2(from)]; // update hash
+    next_hash ^= ZOBRIST_PIECE_SQ[i][curr_color][LOG2(from)]; // update hash
 
     if (move & 0x8000) { // check if promotion
         j = (move >> 12) & 3;
@@ -333,7 +329,7 @@ void make_move(Board *board, Move move) {
 
     board->pieces[i] |= to;
     board->colors[curr_color] |= to;
-    next_hash ^= ZOBRIST_PIECE_SQ[i][LOG2(to)]; // update hash
+    next_hash ^= ZOBRIST_PIECE_SQ[i][curr_color][LOG2(to)]; // update hash
 
 end:
     if (board->ply >= board->stack_capacity) {
@@ -362,8 +358,7 @@ void unmake_move(Board *board, Move move) {
     board->side_to_move ^= 1;
     bool curr_color = board->side_to_move;
     int i, captured_piece_idx;
-    StateFlags prev_state = board->state_stack[board->ply-1];
-    StateFlags next_state = board->state_stack[board->ply  ];
+    StateFlags next_state = board->state_stack[board->ply];
 
     board->ply--;
 
@@ -402,7 +397,7 @@ void unmake_move(Board *board, Move move) {
         board->pieces[KING_IDX] |= aux1;
         board->colors[curr_color] |= from | aux1;
 
-        goto end;
+        return;
     }
 
 
@@ -433,7 +428,6 @@ void unmake_move(Board *board, Move move) {
 
     board->pieces[i] |= from;
     board->colors[curr_color] |= from;
-end:
 }
 
 Move* legal_moves(Board *board, Move *given) {
@@ -614,6 +608,21 @@ end:
 
 bool is_in_check(Board *board) {
     return get_checkers(board, board->side_to_move) != 0;
+}
+
+bool is_threefold(Board *board) {
+    int i, reps = 0;
+    U64 hash = get_hash(board);
+
+    for (i = 1; i <= board->ply; i++) {
+        if (hash == board->hash_stack[board->ply - i])
+            reps++;
+
+        if (reps == 2)
+            return true;
+    }
+
+    return false;
 }
 
 U64 get_hash(Board *board) {

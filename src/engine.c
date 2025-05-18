@@ -29,6 +29,7 @@ static int MOVE_HISTORY_IDX;
 
 static void print_info(Board* board, double time) {
     TTEntry* entry = tt_probe(get_hash(board));
+    int i = 0;
     if (!entry)
         return;
 
@@ -44,12 +45,13 @@ static void print_info(Board* board, double time) {
     if (entry->depth > 0)
         printf(" pv");
     
-    while (d_entry) {
+    while (d_entry && i < entry->depth) {
         printf(" ");
         print_move(d_entry->best);
 
         make_move(copy, d_entry->best);
         d_entry = tt_probe(board_hash(copy));
+        i++;
     }
     free(copy);
 
@@ -191,6 +193,7 @@ void print_engine() {
     if (UCI_DEBUG_ON) {
         printf("Internl Hash:  %lx\n", get_hash(CURR_BOARD));
         printf("External Hash: %lx\n", board_hash(CURR_BOARD));
+        printf("Is Threefold:  %d\n", is_threefold(CURR_BOARD));
     }
     print_board(CURR_BOARD);
 

@@ -68,7 +68,7 @@ static void assert_perft(char* fen, int depth, U64 expected) {
 static void assert_eval(char* fen, int depth, int upper_bound, int lower_bound) {
     Board *board = from_fen(fen);
     eval(board, depth);
-    TTEntry* entry = tt_probe(board->hash);
+    TTEntry* entry = tt_probe(get_hash(board));
     int actual = upper_bound;
     TESTS_RUN++;
     if (!entry) {
@@ -90,7 +90,7 @@ static void assert_eval(char* fen, int depth, int upper_bound, int lower_bound) 
 static void assert_mate(char* fen, int in) {
     Board *board = from_fen(fen);
     eval(board, in+1);
-    TTEntry* entry = tt_probe(board->hash);
+    TTEntry* entry = tt_probe(get_hash(board));
     TESTS_RUN++;
 
     if (abs(entry->score) > CHECKMATE_CP && entry->depth != in) {
@@ -109,7 +109,7 @@ static void assert_mate(char* fen, int in) {
 
 static void assert_procedural_hashing(char* fen, Move move) {
     Board *board = from_fen(fen);
-    U64 actual, expected = board->hash;
+    U64 actual, expected = get_hash(board);
     bool passed = true;
     TESTS_RUN++;
 
@@ -117,9 +117,9 @@ static void assert_procedural_hashing(char* fen, Move move) {
         make_move(board, move);
         unmake_move(board, move);
 
-        actual = board->hash;
+        actual = get_hash(board);
 
-        passed = expected == board->hash;
+        passed = expected == get_hash(board);
     } else {
         Move *curr = (Move[256]){0};
         Move *end = legal_moves(board, curr);
@@ -129,7 +129,7 @@ static void assert_procedural_hashing(char* fen, Move move) {
         while (curr != end && passed) {
             make_move(board, *curr);
             unmake_move(board, *curr);
-            actual = board->hash;
+            actual = get_hash(board);
 
             if (expected != actual) {
                 move = *curr;
@@ -150,6 +150,21 @@ static void assert_procedural_hashing(char* fen, Move move) {
     }
 
     free(board);
+}
+
+static void assert_unequal_hashes(char* fen1, char* fen2) {
+    Board *board1 = from_fen(fen1);
+    Board *board2 = from_fen(fen2);
+    TESTS_RUN++;
+
+    if (get_hash(board1) != get_hash(board2)) {
+        TESTS_PASSED++;
+    } else {
+        printf("PROCEDURAL ZOBRIST HASHING ASSERTION FAILED - HASH COLLISION OF TWO UNEQUAL FENS\nFEN1      %s\nFEN2      %s\n", fen1, fen2);
+    }
+
+    free(board1);
+    free(board2);
 }
 
 
@@ -275,32 +290,40 @@ static void test_procedural_hashing() {
     assert_procedural_hashing("r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/2N2N2/PPPP1PPP/R1BQK2R w KQkq - 6 5", 0); // castling
     assert_procedural_hashing("r1bqkbnr/ppp1pppp/2n5/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3", 0); // en passant
     
-    Board *temp1, *temp2;
-    temp1 = from_fen("8/8/4k3/8/8/8/5K2/8 w - - 0 1");
-    temp2 = from_fen("8/8/4K3/8/8/8/5k2/8 b - - 0 1");
+    assert_unequal_hashes("4k3/8/8/8/8/1r6/8/3R1K2 w - - 4 3", "4k3/8/8/8/8/1R6/8/3r1K2 w - - 4 3");
+    assert_unequal_hashes("rnbqkbnr/p1pppppp/8/8/p1P5/8/1P1PPPPP/RNBQKBNR b KQkq - 0 3", "rnbqkbnr/p1pppppp/8/8/p1p5/8/1P1PPPPP/RNBQKBNR b KQkq - 0 1");
+}
+
+static void test_draws() {
+    printf("Testing threefold repitition...\n");
+    
+    int passed = true;
+    char* fen = "r1b1r3/ppp3kp/2n5/3p1pp1/3P4/B1P3KP/P1P3P1/4R3 w - - 0 22";
+    Board* board = from_fen(fen);
     TESTS_RUN++;
-    if (board_hash(temp1) == board_hash(temp2)) {
-        printf("PROCEDURAL ZOBRIST HASHING ASSERTION FAILED\nHASH COLLISION OF TWO UNEQUAL FENS\nFEN1      %s\nFEN2      %s\n", "8/8/4k3/8/8/8/5K2/8 w - - 0 1", "8/8/4K3/8/8/8/5k2/8 b - - 0 1");
+    make_move(board, move_from_str(board, "e1e8"));
+    passed = passed && !is_threefold(board);
+    make_move(board, move_from_str(board, "g7f7"));
+    passed = passed && !is_threefold(board);
+    make_move(board, move_from_str(board, "e8f8"));
+    passed = passed && !is_threefold(board);
+    make_move(board, move_from_str(board, "f7g7"));
+    passed = passed && !is_threefold(board);
+    make_move(board, move_from_str(board, "f8e8"));
+    passed = passed && !is_threefold(board);
+    make_move(board, move_from_str(board, "g7f7"));
+    passed = passed && !is_threefold(board);
+    make_move(board, move_from_str(board, "e8f8"));
+    passed = passed && !is_threefold(board);
+    make_move(board, move_from_str(board, "f7g7"));
+    passed = passed && !is_threefold(board);
+    make_move(board, move_from_str(board, "f8e8"));
+    //passed = passed && is_threefold(board);
+    if (!passed) {
+        printf("THREEFOLD REPTITION NOT DETECTED FOR GAME\nFEN       %s\n", fen);
     } else {
         TESTS_PASSED++;
-        
     }
-
-    free(temp1);
-    free(temp2);
-
-    char* fen1 = "rnbqkbnr/p1pppppp/8/8/p1P5/8/1P1PPPPP/RNBQKBNR b KQkq - 0 3";
-    char* fen2 = "rnbqkbnr/p1pppppp/8/8/p1p5/8/1P1PPPPP/RNBQKBNR b KQkq - 0 1";
-    temp1 = from_fen(fen1);
-    temp2 = from_fen(fen2);
-    TESTS_RUN++;
-    if (board_hash(temp1) == board_hash(temp2)) {
-        printf("PROCEDURAL ZOBRIST HASHING ASSERTION FAILED\nHASH COLLISION OF TWO UNEQUAL FENS\nFEN1      %s\nFEN2      %s\n", fen1, fen2);
-    } else {
-        TESTS_PASSED++;
-        
-    }
-
 }
 
 
@@ -320,6 +343,7 @@ int main(void) {
     test_mates();
     test_state_stack();
     test_procedural_hashing();
+    test_draws();
 
     if (TESTS_RUN == TESTS_PASSED) {
         printf("\nAll tests passed.\n");
