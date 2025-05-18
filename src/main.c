@@ -7,7 +7,6 @@
 #include "utils.h"
 
 // TODO
-// TRANSPOSITION TABLE
 // 50 half-move rule
 // three-fold repitition
 // value passed pawns

@@ -67,8 +67,16 @@ static void assert_perft(char* fen, int depth, U64 expected) {
 
 static void assert_eval(char* fen, int depth, int upper_bound, int lower_bound) {
     Board *board = from_fen(fen);
-    int actual = eval(board, depth);
+    eval(board, depth);
+    TTEntry* entry = tt_probe(board->hash);
+    int actual = upper_bound;
     TESTS_RUN++;
+    if (!entry) {
+        printf("ERROR READING ENTRY IN EVAL ASSERTION\n");
+        TESTS_PASSED--;
+    } else {
+        actual = entry->score;
+    }
 
     if ((lower_bound <= actual) && (actual <= upper_bound)) {
         TESTS_PASSED++;
@@ -79,19 +87,25 @@ static void assert_eval(char* fen, int depth, int upper_bound, int lower_bound) 
     free(board);
 }
 
-/*static void assert_mate(char* fen, int in) {
+static void assert_mate(char* fen, int in) {
     Board *board = from_fen(fen);
-    PrincipleVariation pv = eval(board, in+1); // TODO remove +1
+    eval(board, in+1);
+    TTEntry* entry = tt_probe(board->hash);
     TESTS_RUN++;
 
-    if (pv.is_mate && pv.depth != in+1) { // TODO remove +1
+    if (abs(entry->score) > CHECKMATE_CP && entry->depth != in) {
         TESTS_PASSED++;
     } else {
-        printf("MATE ASSERTION FAILED\nFEN       %s\nMATE_IN   %d\nACTUAL    %d cp\n", fen, in, pv.score);
+        if (abs(entry->score) <= CHECKMATE_CP) {
+            printf("MATE ASSERTION FAILED - NOT MATE\nFEN       %s\nACTUAL    %d cp\nDEPTH     %d\n", fen, entry->score, entry->depth);
+        } else {
+            printf("MATE ASSERTION FAILED - INCORRECT DEPTH\nFEN       %s\nEXPECTED  %d\nACTUAL    %d\n", fen, in, entry->depth);
+        }
+
     }
     
     free(board);
-}*/
+}
 
 static void assert_procedural_hashing(char* fen, Move move) {
     Board *board = from_fen(fen);
@@ -215,7 +229,7 @@ static void test_eval() {
     assert_eval("8/p2B2B1/p7/p7/p7/p7/pr6/k6K w - - 0 1", 4, 0, 0);
 }
 
-/*static void test_mates() {
+static void test_mates() {
     printf("Testing mates...\n");
 
     // MATES IN 1
@@ -231,7 +245,7 @@ static void test_eval() {
     //assert_mate("", 4);
 
     //assert_mate("", 0);
-}*/
+}
 
 static void test_state_stack() {
     printf("Stress-testing state stack...\n");
@@ -281,6 +295,7 @@ int main(void) {
     setbuf(stdout, NULL);
     init_move_lookup_tables();
     init_zobrist();
+    tt_set_size(256);
     TESTS_RUN = 0;
     TESTS_PASSED = 0;
 
@@ -288,7 +303,7 @@ int main(void) {
     test_sliders();
     test_perfts();
     test_eval();
-    //test_mates();
+    test_mates();
     test_state_stack();
     test_procedural_hashing();
 

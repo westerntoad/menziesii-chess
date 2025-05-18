@@ -107,7 +107,7 @@ static int should_stop_search(U8 depth) {
     return 0;
 }
 
-/*void reorder_moves(Move* list, int n, Move pv) {
+void reorder_moves(Move* list, Board* board, Move pv) {
     // TODO better reordering
     if (!pv)
         return;
@@ -115,11 +115,14 @@ static int should_stop_search(U8 depth) {
     Move temp = *list;
     int i;
 
-    for (i = 0; i < n && list[i] != pv; i++);
+    for (i = 0; i < 256 && list[i] != pv; i++);
 
-    list[0] = pv;
+    /*print_move(pv);
+    printf("\n");
+    print_board(board);*/
     list[i] = temp;
-}*/
+    //list[i] = temp;
+}
 
 int quiesce(Board *board, int alpha, int beta) {
     int score, best = piece_eval(board);
@@ -167,7 +170,7 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth) {
         return quiesce(board, alpha, beta);
 
     TTEntry* tt_entry = tt_probe(board->hash);
-    if (tt_entry && tt_entry->depth >= depth) {
+    if (tt_entry && (tt_entry->depth >= depth || abs(tt_entry->score) > CHECKMATE_CP)) {
         if (tt_entry->type == EXACT_NODE) {
             return tt_entry->score;
         } else if (tt_entry->type == ALL_NODE && tt_entry->score <= alpha) {
@@ -190,10 +193,14 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth) {
         }
     }
 
+    if (is_in_check(board))
+        depth++;
+
     /*if (tt_entry)
-        reorder_moves(curr, end - curr, tt_entry->best);*/
+        reorder_moves(curr, board, tt_entry->best);*/
 
     Move best_move = *curr;
+
     char flag = ALL_NODE;
 
     while (curr < end) {

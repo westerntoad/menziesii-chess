@@ -34,16 +34,14 @@ static void print_info(Board* board, double time) {
 
     printf("info depth %d score ", entry->depth);
     if (abs(entry->score) > CHECKMATE_CP) {
-        //printf("mate %d", ((pv->depth + 1) / 2) * (CURR_BOARD->side_to_move * (-2) + 1)); // TODO remove -1
-        printf("mate ?"); // TODO change
+        printf("mate %d", (entry->depth / 2) * (CURR_BOARD->side_to_move * (-2) + 1)); // TODO remove -1
+        //printf("mate ?"); // TODO change
     } else {
         printf("cp %d", entry->score);
     }
 
     // TODO pv
-    printf(" pv ");
-    print_move(entry->best);
-    /*TTEntry* d_entry = entry;
+    TTEntry* d_entry = entry;
     Board* copy = copy_board(board);
     if (entry->depth > 0)
         printf(" pv");
@@ -55,7 +53,7 @@ static void print_info(Board* board, double time) {
         make_move(copy, d_entry->best);
         d_entry = tt_probe(board_hash(copy));
     }
-    free(copy);*/
+    free(copy);
 
     if (NUM_NODES > 0) {
         printf(" nodes %lu", NUM_NODES);
