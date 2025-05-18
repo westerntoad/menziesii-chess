@@ -204,7 +204,8 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth) {
     if (curr == end) {
         if (is_in_check(board)) {
             // mate
-            return -(CHECKMATE_CP + depth); // TODO this is bad
+            int side_coeff = (board->side_to_move * (-2) + 1);
+            return (CHECKMATE_CP + depth) * side_coeff; // TODO this is bad
         } else {
             // stalemate
             return 0; // TODO contempt score

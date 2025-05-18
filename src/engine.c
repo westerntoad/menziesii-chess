@@ -37,7 +37,7 @@ static void print_info(Board* board, double time) {
 
     printf("info depth %d score ", entry->depth);
     if (abs(entry->score) > CHECKMATE_CP) {
-        printf("mate %d", (entry->depth / 2) * ((entry->score > 0) - (entry->score < 0)));
+        printf("mate %d", (entry->depth / 2));
     } else {
         printf("cp %d", entry->score * side_coeff);
     }
