@@ -18,7 +18,7 @@ typedef struct {
 } TTEntry;
 
 // Zobrist hashes
-extern U64 ZOBRIST_PIECE_SQ[NUM_PIECES][NUM_SQUARES];
+extern U64 ZOBRIST_PIECE_SQ[NUM_PIECES][NUM_COLORS][NUM_SQUARES];
 extern U64 ZOBRIST_BLACK;
 // 1111 -> KQkq
 extern U64 ZOBRIST_CASTLING[16];

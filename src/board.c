@@ -244,10 +244,10 @@ void make_move(Board *board, Move move) {
         board->pieces[KING_IDX] |= aux2;
         board->colors[curr_color] |= to | aux2;
 
-        board->hash ^= ZOBRIST_PIECE_SQ[ROOK_IDX][LOG2(from)]; // update hash
-        board->hash ^= ZOBRIST_PIECE_SQ[KING_IDX][LOG2(aux1)];
-        board->hash ^= ZOBRIST_PIECE_SQ[ROOK_IDX][LOG2(to)];
-        board->hash ^= ZOBRIST_PIECE_SQ[KING_IDX][LOG2(aux2)];
+        board->hash ^= ZOBRIST_PIECE_SQ[ROOK_IDX][curr_color][LOG2(from)]; // update hash
+        board->hash ^= ZOBRIST_PIECE_SQ[KING_IDX][curr_color][LOG2(aux1)];
+        board->hash ^= ZOBRIST_PIECE_SQ[ROOK_IDX][curr_color][LOG2(to)];
+        board->hash ^= ZOBRIST_PIECE_SQ[KING_IDX][curr_color][LOG2(aux2)];
 
         goto end; // gosh
     }
@@ -267,8 +267,7 @@ void make_move(Board *board, Move move) {
         board->pieces[PAWN_IDX] &= ~aux1; // clear ep_captured pawn
         board->colors[curr_color ^ 1] &= ~aux1;
 
-        //printf("CLEARING CAPTURED EP PAWN\n"); // DEBUG
-        board->hash ^= ZOBRIST_PIECE_SQ[PAWN_IDX][LOG2(aux1)]; // update hash
+        board->hash ^= ZOBRIST_PIECE_SQ[PAWN_IDX][curr_color ^ 1][LOG2(aux1)]; // update hash
     } else if (move & 0x4000) { // check if capture
         for (j = 0; j < NUM_PIECES; j++) {
             if (board->pieces[j] & to)
@@ -278,8 +277,7 @@ void make_move(Board *board, Move move) {
         board->pieces[j] &= ~to; // clear captured piece
         board->colors[curr_color ^ 1] &= ~to;
 
-        //printf("CLEARING CAPTURED PIECE\n"); // DEBUG
-        board->hash ^= ZOBRIST_PIECE_SQ[j][LOG2(to)]; // update hash
+        board->hash ^= ZOBRIST_PIECE_SQ[j][curr_color ^ 1][LOG2(to)]; // update hash
 
         next_state |= j << 17; // store captured piece-index
         next_state &= 0xfffe0000; // clear half-move clock
@@ -294,7 +292,6 @@ void make_move(Board *board, Move move) {
             sq = LOG2(sout_one(to));
         }
         next_state |= sq << 20;
-        //printf("SETTING EP TARGET %d\n", sq%8); // DEBUG
         board->hash ^= ZOBRIST_EP[sq%8]; // update hash
     } else {
         // if not double pawn push, clear ep target mask
@@ -313,7 +310,7 @@ void make_move(Board *board, Move move) {
     board->pieces[i] &= ~from;
     board->colors[curr_color] &= ~from;
 
-    board->hash ^= ZOBRIST_PIECE_SQ[i][LOG2(from)]; // update hash
+    board->hash ^= ZOBRIST_PIECE_SQ[i][curr_color][LOG2(from)]; // update hash
 
     if (move & 0x8000) { // check if promotion
         j = (move >> 12) & 3;
@@ -329,7 +326,7 @@ void make_move(Board *board, Move move) {
 
     board->pieces[i] |= to;
     board->colors[curr_color] |= to;
-    board->hash ^= ZOBRIST_PIECE_SQ[i][LOG2(to)]; // update hash
+    board->hash ^= ZOBRIST_PIECE_SQ[i][curr_color][LOG2(to)]; // update hash
 
 end:
     if (board->ply >= board->stack_capacity) {
@@ -407,10 +404,10 @@ void unmake_move(Board *board, Move move) {
         board->pieces[KING_IDX] |= aux1;
         board->colors[curr_color] |= from | aux1;
 
-        board->hash ^= ZOBRIST_PIECE_SQ[ROOK_IDX][LOG2(from)]; // update hash
-        board->hash ^= ZOBRIST_PIECE_SQ[KING_IDX][LOG2(aux1)];
-        board->hash ^= ZOBRIST_PIECE_SQ[ROOK_IDX][LOG2(to)];
-        board->hash ^= ZOBRIST_PIECE_SQ[KING_IDX][LOG2(aux2)];
+        board->hash ^= ZOBRIST_PIECE_SQ[ROOK_IDX][curr_color][LOG2(from)]; // update hash
+        board->hash ^= ZOBRIST_PIECE_SQ[KING_IDX][curr_color][LOG2(aux1)];
+        board->hash ^= ZOBRIST_PIECE_SQ[ROOK_IDX][curr_color][LOG2(to)];
+        board->hash ^= ZOBRIST_PIECE_SQ[KING_IDX][curr_color][LOG2(aux2)];
 
         goto end;
     }
@@ -424,7 +421,7 @@ void unmake_move(Board *board, Move move) {
 
     board->pieces[i] &= ~to;
     board->colors[curr_color] &= ~to;
-    board->hash ^= ZOBRIST_PIECE_SQ[i][LOG2(to)]; // update hash
+    board->hash ^= ZOBRIST_PIECE_SQ[i][curr_color][LOG2(to)]; // update hash
     
     if (move >> 12 == 5) { // check if ep capture
         aux1 = curr_color ? nort_one(to) : sout_one(to); // ep-captured pawn
@@ -432,14 +429,14 @@ void unmake_move(Board *board, Move move) {
         board->pieces[PAWN_IDX] |= aux1;
         board->colors[curr_color ^ 1] |= aux1;
 
-        board->hash ^= ZOBRIST_PIECE_SQ[PAWN_IDX][LOG2(aux1)]; // update hash
+        board->hash ^= ZOBRIST_PIECE_SQ[PAWN_IDX][curr_color ^ 1][LOG2(aux1)]; // update hash
     } else if (move & 0x4000) { // check if capture
         captured_piece_idx = (next_state >> 17) & 0x07; // restore captured piece from state_stack
 
         board->pieces[captured_piece_idx] |= to;
         board->colors[curr_color ^ 1] |= to;
 
-        board->hash ^= ZOBRIST_PIECE_SQ[captured_piece_idx][LOG2(to)]; // update hash
+        board->hash ^= ZOBRIST_PIECE_SQ[captured_piece_idx][curr_color ^ 1][LOG2(to)]; // update hash
     }
 
 
@@ -448,7 +445,7 @@ void unmake_move(Board *board, Move move) {
 
     board->pieces[i] |= from;
     board->colors[curr_color] |= from;
-    board->hash ^= ZOBRIST_PIECE_SQ[i][LOG2(from)]; // update hash
+    board->hash ^= ZOBRIST_PIECE_SQ[i][curr_color][LOG2(from)]; // update hash
 end:
     // update hash for castling
     next_state = (next_state >> 27) & 0xf;

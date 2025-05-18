@@ -290,7 +290,7 @@ static void test_procedural_hashing() {
     assert_procedural_hashing("r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/2N2N2/PPPP1PPP/R1BQK2R w KQkq - 6 5", 0); // castling
     assert_procedural_hashing("r1bqkbnr/ppp1pppp/2n5/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3", 0); // en passant
     
-    assert_unequal_hashes("8/8/4K3/8/8/8/5k2/8 b - - 0 1", "8/8/4K3/8/8/8/5k2/8 b - - 0 1");
+    assert_unequal_hashes("4k3/8/8/8/8/1r6/8/3R1K2 w - - 4 3", "4k3/8/8/8/8/1R6/8/3r1K2 w - - 4 3");
     assert_unequal_hashes("rnbqkbnr/p1pppppp/8/8/p1P5/8/1P1PPPPP/RNBQKBNR b KQkq - 0 3", "rnbqkbnr/p1pppppp/8/8/p1p5/8/1P1PPPPP/RNBQKBNR b KQkq - 0 1");
 }
 
