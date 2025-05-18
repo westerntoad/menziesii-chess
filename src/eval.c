@@ -107,6 +107,20 @@ static int should_stop_search(U8 depth) {
     return 0;
 }
 
+/*void reorder_moves(Move* list, int n, Move pv) {
+    // TODO better reordering
+    if (!pv)
+        return;
+
+    Move temp = *list;
+    int i;
+
+    for (i = 0; i < n && list[i] != pv; i++);
+
+    list[0] = pv;
+    list[i] = temp;
+}*/
+
 int quiesce(Board *board, int alpha, int beta) {
     int score, best = piece_eval(board);
 
@@ -146,49 +160,71 @@ int quiesce(Board *board, int alpha, int beta) {
 }
 
 int alphabeta(Board *board, int alpha, int beta, U8 depth) {
+    bool preempted = false;
     NUM_NODES++;
     
-    if (depth == 0) {
-        return quiesce(board, alpha, beta);
-    } else {
-        Move *curr = (Move[256]){0};
-        Move *end = legal_moves(board, curr);
-        Move best_move = *curr;
+    if (depth == 0)
+        //return quiesce(board, alpha, beta);
+        return piece_eval(board);
 
-        if (curr == end) {
-            if (is_in_check(board)) {
-                // mate
-                return -(CHECKMATE_CP + depth); // TODO this is bad
-            } else {
-                // stalemate
-                return 0; // TODO contempt score
-            }
+    TTEntry* tt_entry = tt_probe(board->hash);
+    if (tt_entry && tt_entry->depth >= depth) {
+        if (tt_entry->type == EXACT_NODE) {
+            return tt_entry->score;
+        } else if (tt_entry->type == ALL_NODE && tt_entry->score <= alpha) {
+            return alpha;
+        } else if (tt_entry->type == CUT_NODE  && tt_entry->score >= beta) {
+            return beta;
         }
-
-        while (curr < end) {
-            make_move(board, *curr);
-            int score = -alphabeta(board, -beta, -alpha, depth-1);
-            unmake_move(board, *curr);
-
-            if (score >= beta) {
-                return beta;
-            }
-            
-            if (score > alpha) {
-                best_move = *curr;
-                alpha = score;
-            }
-
-            if (should_stop_search(depth))
-                return alpha;
-
-            curr++;
-        }
-        U64 key = board_hash(board);
-        //printf("%lx\n", key);
-        tt_save(key, depth, alpha, best_move, EXACT_NODE);
-        return alpha;
     }
+
+    Move *curr = (Move[256]){0};
+    Move *end = legal_moves(board, curr);
+
+    if (curr == end) {
+        if (is_in_check(board)) {
+            // mate
+            return -(CHECKMATE_CP + depth); // TODO this is bad
+        } else {
+            // stalemate
+            return 0; // TODO contempt score
+        }
+    }
+
+    /*if (tt_entry)
+        reorder_moves(curr, end - curr, tt_entry->best);*/
+
+    Move best_move = *curr;
+    char flag = ALL_NODE;
+
+    while (curr < end) {
+        if (should_stop_search(depth)) {
+            preempted = true;
+            break;
+        }
+
+        make_move(board, *curr);
+        int score = -alphabeta(board, -beta, -alpha, depth-1);
+        unmake_move(board, *curr);
+
+        if (score >= beta) {
+            tt_save(board->hash, depth, beta, best_move, CUT_NODE);
+            return beta;
+        }
+        
+        if (score > alpha) {
+            flag = EXACT_NODE;
+            best_move = *curr;
+            alpha = score;
+        }
+        
+        curr++;
+    }
+
+    if (!preempted)
+        tt_save(board->hash, depth, alpha, best_move, flag);
+
+    return alpha;
 }
 
 void start_timer() {

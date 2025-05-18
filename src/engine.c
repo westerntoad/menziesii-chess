@@ -27,17 +27,19 @@ static Move MOVE_HISTORY[64];
 static int MOVE_HISTORY_IDX;
 // ~ debug ~
 
-static void print_tt_entry(Board *board, TTEntry* entry, double time) {
-    printf("info depth %d score ", entry->depth);
-    if (abs(entry->score) > CHECKMATE_CP) {
+static void print_tt_entry(TTEntry entry, double time) {
+    printf("info depth %d score ", entry.depth);
+    if (abs(entry.score) > CHECKMATE_CP) {
         //printf("mate %d", ((pv->depth + 1) / 2) * (CURR_BOARD->side_to_move * (-2) + 1)); // TODO remove -1
         printf("mate ?"); // TODO change
     } else {
-        printf("cp %d", entry->score);
+        printf("cp %d", entry.score);
     }
 
     // TODO pv
-    TTEntry* d_entry = entry;
+    printf(" pv ");
+    print_move(entry.best);
+    /*TTEntry* d_entry = entry;
     Board* copy = copy_board(board);
     if (entry->depth > 0)
         printf(" pv");
@@ -49,15 +51,7 @@ static void print_tt_entry(Board *board, TTEntry* entry, double time) {
         make_move(copy, d_entry->best);
         d_entry = tt_probe(board_hash(copy));
     }
-    free(copy);
-    /*if (pv->depth > 0) {
-        printf(" pv");
-
-        for (int i = 0; i < pv->depth; i++) {
-            printf(" ");
-            print_move(pv->line[i]);
-        }
-    }*/
+    free(copy);*/
 
     if (NUM_NODES > 0) {
         printf(" nodes %lu", NUM_NODES);
@@ -69,10 +63,6 @@ static void print_tt_entry(Board *board, TTEntry* entry, double time) {
     }
 
     printf("\n");
-    if (UCI_DEBUG_ON) {
-        printf("info string HASH 1 %lx\n", board_hash(board));
-        printf("info string HASH 2 %lx\n", board->hash);
-    }
 }
 
 static void* search(void* arg) {
@@ -80,32 +70,31 @@ static void* search(void* arg) {
     SearchParams params = *(SearchParams*)arg;
     SEARCH_TIME = params.movetime;
     U8 curr_depth = 0;
-    U64 hash;
-    clock_t start, end;
+    U64 hash = board_hash(board);
+    TTEntry entry;
+    clock_t start = clock(), end = clock();
 
     start_timer();
     do {
         curr_depth++;
-        if (curr_depth > 1) {
-            print_tt_entry(board, tt_probe(hash), (double)(end - start) / CLOCKS_PER_SEC);
-        }
 
         NUM_NODES = 0;
         start = clock();
-        hash = eval(board, curr_depth);
+        eval(board, curr_depth);
         end = clock();
+        if (!STOP_SEARCH) {
+            entry = *tt_probe(hash);
+            print_tt_entry(entry, (double)(end - start) / CLOCKS_PER_SEC);
+        }
         
     } while (curr_depth < params.depth && !STOP_SEARCH);
-
-    if (!STOP_SEARCH || curr_depth <= 1) {
-        hash = board_hash(board);
-        print_tt_entry(board, tt_probe(hash), (double)(end - start) / CLOCKS_PER_SEC);
-    }
     STOP_SEARCH = 0;
 
     printf("bestmove ");
-    print_move(tt_probe(hash)->best);
-    /*if (pv.depth > 1) {
+    print_move(entry.best);
+
+    //print_move(tt_probe(hash)->best);
+    /*if (curr_depth > 1) {
         printf(" ponder ");
         print_move(pv.line[1]);
     }*/

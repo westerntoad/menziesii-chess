@@ -104,6 +104,31 @@ U64 board_hash(Board* board) {
     return hash;
 }
 
+void print_tt(TTEntry* entry) {
+    if (!entry) {
+        printf("{ NULL }");
+    } else {
+        printf("{ %lx - ", entry->key);
+        if (entry->type == EMPTY_NODE) {
+            printf("EMPTY");
+        } else {
+            char x = '\0';
+            if (entry->type == EXACT_NODE) {
+                x = '=';
+            } else if (entry->type == ALL_NODE) {
+                x = '<';
+            } else if (entry->type == ALL_NODE) {
+                x = '>';
+            } else {
+                x = '?';
+            }
+            printf("x %c %d - depth=%d - ", x, entry->score, entry->depth);
+            print_move(entry->best);
+        }
+        printf(" }");
+    }
+}
+
 void print_table() {
     int i, j;
 

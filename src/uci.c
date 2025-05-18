@@ -189,7 +189,7 @@ int uci(void) {
         while (*ptr != '\n' && *ptr != '\0') { // read by token
             if (has(&ptr, "uci")) {
                 printf("id name %s dev-%d-%s\nid author %s\nuciok\n", IDENTIFY_NAME, COMMIT_DATE, GIT_HASH, IDENTIFY_AUTHOR);
-                printf("option name Hash type spin default %d min 1 max 128\n", DEFAULT_TT_SIZE);
+                printf("option name Hash type spin default %d min 1 max 65536\n", DEFAULT_TT_SIZE);
             } else if (has(&ptr, "isready")) {
                 printf("readyok\n");
                 break;
