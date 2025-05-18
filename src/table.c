@@ -4,7 +4,7 @@
 #include "utils.h"
 
 static TTEntry* T_TABLE = NULL;
-static int TT_ENTRIES = 0;
+static U64 TT_ENTRIES = 0;
 
 // Zobrist hashes
 U64 ZOBRIST_PIECE_SQ[NUM_PIECES][NUM_SQUARES];
@@ -41,7 +41,7 @@ void tt_set_size(int mb_size) {
     if (T_TABLE)
         free(T_TABLE);
     
-    int byte_size = mb_size * 1024 * 1024;
+    U64 byte_size = (U64)mb_size * 1024 * 1024;
     TT_ENTRIES = byte_size / sizeof(TTEntry);
     T_TABLE = malloc(sizeof(TTEntry) * TT_ENTRIES);
     if (T_TABLE == NULL) {

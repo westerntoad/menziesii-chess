@@ -164,8 +164,7 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth) {
     NUM_NODES++;
     
     if (depth == 0)
-        //return quiesce(board, alpha, beta);
-        return piece_eval(board);
+        return quiesce(board, alpha, beta);
 
     TTEntry* tt_entry = tt_probe(board->hash);
     if (tt_entry && tt_entry->depth >= depth) {

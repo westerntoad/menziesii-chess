@@ -150,6 +150,20 @@ static void go(char** input) {
     start_search(params);
 }
 
+static void setoption(char** input) {
+    while (**input != '\n') {
+        if (has(input, "Hash")) {
+            if (has(input, "value")) {
+                resize_engine_table(atoi(next_token(input)));
+            }
+            return;
+        } else {
+            consume_token(input);
+        }
+    }
+}
+
+
 static void stop() {
     stop_search();
 }
@@ -199,6 +213,10 @@ int uci(void) {
             } else if (has(&ptr, "go")) {
                 go(&ptr);
                 break;
+            } else if (has(&ptr, "setoption")) {
+                if (has(&ptr, "name")) {
+                    setoption(&ptr);
+                }
             } else if (has(&ptr, "stop")) {
                 stop();
                 break;

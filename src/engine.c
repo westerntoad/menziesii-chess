@@ -27,18 +27,22 @@ static Move MOVE_HISTORY[64];
 static int MOVE_HISTORY_IDX;
 // ~ debug ~
 
-static void print_tt_entry(TTEntry entry, double time) {
-    printf("info depth %d score ", entry.depth);
-    if (abs(entry.score) > CHECKMATE_CP) {
+static void print_info(Board* board, double time) {
+    TTEntry* entry = tt_probe(board->hash);
+    if (!entry)
+        return;
+
+    printf("info depth %d score ", entry->depth);
+    if (abs(entry->score) > CHECKMATE_CP) {
         //printf("mate %d", ((pv->depth + 1) / 2) * (CURR_BOARD->side_to_move * (-2) + 1)); // TODO remove -1
         printf("mate ?"); // TODO change
     } else {
-        printf("cp %d", entry.score);
+        printf("cp %d", entry->score);
     }
 
     // TODO pv
     printf(" pv ");
-    print_move(entry.best);
+    print_move(entry->best);
     /*TTEntry* d_entry = entry;
     Board* copy = copy_board(board);
     if (entry->depth > 0)
@@ -69,9 +73,10 @@ static void* search(void* arg) {
     Board *board = copy_board(CURR_BOARD);
     SearchParams params = *(SearchParams*)arg;
     SEARCH_TIME = params.movetime;
+    TTEntry* entry;
     U8 curr_depth = 0;
-    U64 hash = board_hash(board);
-    TTEntry entry;
+    U64 hash = board->hash;
+    Move best = 0, ponder = 0;
     clock_t start = clock(), end = clock();
 
     start_timer();
@@ -82,16 +87,28 @@ static void* search(void* arg) {
         start = clock();
         eval(board, curr_depth);
         end = clock();
-        if (!STOP_SEARCH) {
-            entry = *tt_probe(hash);
-            print_tt_entry(entry, (double)(end - start) / CLOCKS_PER_SEC);
+        entry = tt_probe(hash);
+
+        if (entry) {
+            best = entry->best;
+            make_move(board, best);
+            entry = tt_probe(board->hash);
+            if (entry)
+                ponder = entry->best;
+            unmake_move(board, best);
         }
+        if (!STOP_SEARCH)
+            print_info(board, (double)(end - start) / CLOCKS_PER_SEC);
         
     } while (curr_depth < params.depth && !STOP_SEARCH);
     STOP_SEARCH = 0;
 
     printf("bestmove ");
-    print_move(entry.best);
+    print_move(best);
+    if (ponder) {
+        printf(" ponder ");
+        print_move(ponder);
+    }
 
     //print_move(tt_probe(hash)->best);
     /*if (curr_depth > 1) {
