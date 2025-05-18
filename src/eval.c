@@ -107,21 +107,23 @@ static int should_stop_search(U8 depth) {
     return 0;
 }
 
-void reorder_moves(Move* list, Board* board, Move pv) {
+void reorder_moves(Move* list, int n, Move pv) {
     // TODO better reordering
-    if (!pv)
+    if (!pv) {
+        fprintf(stderr, "ERROR: passing null principle variation move to move reording");
         return;
+    }
 
-    Move temp = *list;
     int i;
 
-    for (i = 0; i < 256 && list[i] != pv; i++);
+    for (i = 0; i < n && list[i] != pv; i++);
 
-    /*print_move(pv);
-    printf("\n");
-    print_board(board);*/
+    if (i == n)
+        return;
+
+    Move temp = list[0];
+    list[0] = pv;
     list[i] = temp;
-    //list[i] = temp;
 }
 
 int quiesce(Board *board, int alpha, int beta) {
@@ -143,8 +145,18 @@ int quiesce(Board *board, int alpha, int beta) {
             curr++;
             continue;
         }
+        if (board->ply > 100) {
+            print_move(*curr);
+            printf("\n");
+            print_board(board);
+        }
         make_move(board, *curr);
         score = -quiesce(board, -beta, -alpha);
+        if (board->ply > 100) {
+            print_move(*curr);
+            printf("\n");
+            print_board(board);
+        }
         unmake_move(board, *curr);
 
         if (score > best)
@@ -196,12 +208,30 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth) {
     if (is_in_check(board))
         depth++;
 
-    /*if (tt_entry)
-        reorder_moves(curr, board, tt_entry->best);*/
+    if (tt_entry)
+        reorder_moves(curr, end - curr, tt_entry->best);
 
     Move best_move = *curr;
 
     char flag = ALL_NODE;
+
+    // HELPFUL FOR FINDING HASH COLLISIONS
+    /*Move* temp = curr;
+    bool found = false;
+    while (tt_entry && temp < end) {
+        if (tt_entry->best == *temp) {
+            found = true;
+            break;
+        }
+        temp++;
+    }
+    if (tt_entry && !found) {
+        print_move(tt_entry->best);
+        printf("\nFEN: %s\n", to_fen(board));
+        print_board(board);
+        printf("\n\n");
+        STOP_SEARCH = true;
+    }*/
 
     while (curr < end) {
         if (should_stop_search(depth)) {

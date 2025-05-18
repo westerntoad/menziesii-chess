@@ -285,8 +285,22 @@ static void test_procedural_hashing() {
         TESTS_PASSED++;
         
     }
+
     free(temp1);
     free(temp2);
+
+    char* fen1 = "rnbqkbnr/p1pppppp/8/8/p1P5/8/1P1PPPPP/RNBQKBNR b KQkq - 0 3";
+    char* fen2 = "rnbqkbnr/p1pppppp/8/8/p1p5/8/1P1PPPPP/RNBQKBNR b KQkq - 0 1";
+    temp1 = from_fen(fen1);
+    temp2 = from_fen(fen2);
+    TESTS_RUN++;
+    if (board_hash(temp1) == board_hash(temp2)) {
+        printf("PROCEDURAL ZOBRIST HASHING ASSERTION FAILED\nHASH COLLISION OF TWO UNEQUAL FENS\nFEN1      %s\nFEN2      %s\n", fen1, fen2);
+    } else {
+        TESTS_PASSED++;
+        
+    }
+
 }
 
 

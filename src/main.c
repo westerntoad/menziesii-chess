@@ -11,13 +11,13 @@
 // three-fold repitition
 // value passed pawns
 // undervalue isolated pawns
-// add checks to quiescent
 // add pondering
 // mobility score for individual pieces
 // resrict quiescent search depth
 // write README
 // tablebases
 // iterative deepening
+// better move reording
 
 int main(void) {
     srand(time(NULL));
