@@ -1,4 +1,5 @@
 #include <string.h>
+#include "eval.h"
 #include "table.h"
 #include "types.h"
 #include "utils.h"
@@ -105,6 +106,18 @@ U64 board_hash(Board* board) {
         hash ^= ZOBRIST_EP[((state >> 20) & 0x3f) % 8];
 
     return hash;
+}
+
+int mate_score(TTEntry* entry) {
+    if (abs(entry->score) <= CHECKMATE_CP)
+        return 0;
+
+    int depth = abs(entry->score) - CHECKMATE_CP + 1;
+    int mate = depth / 2;
+    if (depth % 2 == 1)
+        mate *= -1;
+
+    return mate;
 }
 
 void print_tt(TTEntry* entry) {

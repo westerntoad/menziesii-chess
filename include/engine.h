@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-#define DEFAULT_TT_SIZE 16
+#define DEFAULT_TT_SIZE 64
 
 typedef struct {
     int infinite;

@@ -17,6 +17,7 @@ volatile int SEARCH_TIME;
 volatile int SEARCHING;
 
 U64 NUM_NODES;
+U8 HIGHEST_DEPTH;
 
 static pthread_t SEARCH_THREAD;
 static Board *CURR_BOARD;
@@ -27,7 +28,7 @@ static Move MOVE_HISTORY[64];
 static int MOVE_HISTORY_IDX;
 // ~ debug ~
 
-static void print_info(Board* board, double time) {
+static void print_info(Board* board, U8 depth, double time) {
     TTEntry* entry = tt_probe(get_hash(board));
     int i = 0;
     if (!entry)
@@ -35,9 +36,9 @@ static void print_info(Board* board, double time) {
 
     int side_coeff = (CURR_BOARD->side_to_move * (-2) + 1);
 
-    printf("info depth %d score ", entry->depth);
+    printf("info depth %d seldepth %d score ", depth, HIGHEST_DEPTH);
     if (abs(entry->score) > CHECKMATE_CP) {
-        printf("mate %d", (entry->depth / 2));
+        printf("mate %d", mate_score(entry));
     } else {
         printf("cp %d", entry->score * side_coeff);
     }
@@ -98,7 +99,7 @@ static void* search(void* arg) {
             unmake_move(board, best);
         }
         if (!STOP_SEARCH)
-            print_info(board, (double)(end - start) / CLOCKS_PER_SEC);
+            print_info(board, curr_depth, (double)(end - start) / CLOCKS_PER_SEC);
         
     } while (curr_depth < params.depth && !STOP_SEARCH);
     STOP_SEARCH = 0;

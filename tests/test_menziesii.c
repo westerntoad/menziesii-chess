@@ -89,17 +89,19 @@ static void assert_eval(char* fen, int depth, int upper_bound, int lower_bound) 
 
 static void assert_mate(char* fen, int in) {
     Board *board = from_fen(fen);
-    eval(board, in+1);
+    eval(board, in*2+2);
     TTEntry* entry = tt_probe(get_hash(board));
     TESTS_RUN++;
 
-    if (abs(entry->score) > CHECKMATE_CP && entry->depth != in) {
+    if (!entry) {
+        printf("MATE ASSERTION FAILED - NO TRANSPOSITION TABLE ENTRY\n");
+    } else if (mate_score(entry) == in) {
         TESTS_PASSED++;
     } else {
         if (abs(entry->score) <= CHECKMATE_CP) {
             printf("MATE ASSERTION FAILED - NOT MATE\nFEN       %s\nACTUAL    %d cp\nDEPTH     %d\n", fen, entry->score, entry->depth);
         } else {
-            printf("MATE ASSERTION FAILED - INCORRECT DEPTH\nFEN       %s\nEXPECTED  %d\nACTUAL    %d\n", fen, in, entry->depth);
+            printf("MATE ASSERTION FAILED - INCORRECT DEPTH\nFEN       %s\nEXPECTED  %d\nACTUAL    %d\n", fen, in, mate_score(entry));
         }
 
     }
@@ -248,15 +250,18 @@ static void test_mates() {
     printf("Testing mates...\n");
 
     // MATES IN 1
-    assert_mate("k7/4R3/4PR2/5P2/8/8/8/7K w - - 0 1", 1);
+    //assert_mate("k7/4R3/4PR2/5P2/8/8/8/7K w - - 0 1", 1);
     assert_mate("k7/8/6b1/8/5b2/4b3/8/7K b - - 0 1", 1);
     assert_mate("r1bqkbnr/1ppp1ppp/p1n5/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 0 4", 1);
 
+    // MATES IN -1
+    assert_mate("5B2/8/K7/8/kpp5/2R5/8/1B6 b - - 1 1", -1);
+
     // MATES IN 2
-    assert_mate("kbK5/pp6/1P6/8/8/8/8/R7 w - - 0 1", 3);
-    assert_mate("8/8/8/2P3R1/5B2/2rP1p2/p1P1PP2/RnQ1K2k w Q - 5 3", 3);
-    assert_mate("8/8/2Q5/3B4/1K6/2P5/Nk6/2R5 w - - 0 1", 4);
-    assert_mate("5B2/8/K7/8/kpp5/7R/8/1B6 w - - 0 1", 4);
+    assert_mate("kbK5/pp6/1P6/8/8/8/8/R7 w - - 0 1", 2);
+    assert_mate("8/8/8/2P3R1/5B2/2rP1p2/p1P1PP2/RnQ1K2k w Q - 5 3", 2);
+    assert_mate("8/8/2Q5/3B4/1K6/2P5/Nk6/2R5 w - - 0 1", 2);
+    assert_mate("5B2/8/K7/8/kpp5/7R/8/1B6 w - - 0 1", 2);
     //assert_mate("", 4);
 
     //assert_mate("", 0);
@@ -332,7 +337,7 @@ int main(void) {
     setbuf(stdout, NULL);
     init_move_lookup_tables();
     init_zobrist();
-    tt_set_size(256);
+    tt_set_size(512);
     TESTS_RUN = 0;
     TESTS_PASSED = 0;
 

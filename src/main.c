@@ -19,6 +19,7 @@
 // better move reording
 // endgame king piece-square table
 // change to a fail-soft alpha beta search
+// limit on selective depth for check
 
 // BUGS
 // position fen 8/8/8/8/4K3/8/1R6/4k3 b - - 0 1 moves e1d1 e4d3 d1e7
@@ -26,6 +27,9 @@
 //
 // position fen 8/8/8/8/4K3/8/1R6/4k3 b - - 0 1 moves e1d1 e4d3 d1e7 d1e1
 // # something happening
+//
+// position fen 1k6/7R/2K5/8/8/8/8/8 b - - 2 2 
+// # incorrect mate
 
 int main(void) {
     srand(time(NULL));
