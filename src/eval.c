@@ -187,7 +187,8 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth) {
 
         return quiesce(board, alpha, beta);
 
-    TTEntry* tt_entry = tt_probe(get_hash(board));
+    //TTEntry* tt_entry = tt_probe(get_hash(board));
+    TTEntry* tt_entry = NULL;
     if (tt_entry && (tt_entry->depth >= depth || abs(tt_entry->score) > CHECKMATE_CP)) {
         if (tt_entry->type == EXACT_NODE) {
             return tt_entry->score;
@@ -204,8 +205,8 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth) {
     if (curr == end) {
         if (is_in_check(board)) {
             // mate
-            int side_coeff = (board->side_to_move * (-2) + 1);
-            return (CHECKMATE_CP + depth) * side_coeff; // TODO this is bad
+            //int side_coeff = (board->side_to_move * (-2) + 1);
+            return -(CHECKMATE_CP + depth); // TODO this is bad
         } else {
             // stalemate
             return 0; // TODO contempt score
