@@ -109,6 +109,7 @@ U64 board_hash(Board* board) {
 }
 
 int mate_score(TTEntry* entry) {
+    printf("%d, %d\n", entry->score, CHECKMATE_CP);
     if (abs(entry->score) <= CHECKMATE_CP)
         return 0;
 

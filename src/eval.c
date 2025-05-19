@@ -179,9 +179,9 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth, U8 ply) {
     if (depth == 0)
         return quiesce(board, alpha, beta);
 
-    //TTEntry* tt_entry = tt_probe(get_hash(board));
-    TTEntry* tt_entry = NULL;
-    if (tt_entry && tt_entry->depth >= depth) {
+    TTEntry* tt_entry = tt_probe(get_hash(board));
+    //TTEntry* tt_entry = NULL;
+    if (tt_entry && (tt_entry->depth >= depth)) {
         if (tt_entry->type == EXACT_NODE) {
             return tt_entry->score;
         } else if (tt_entry->type == ALL_NODE && tt_entry->score <= alpha) {
@@ -190,9 +190,9 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth, U8 ply) {
             return beta;
         }
     }
-    /*if (tt_entry && tt_entry->score > CHECKMATE_CP) {
+    if (tt_entry && tt_entry->score > CHECKMATE_CP) {
         depth = tt_entry->depth;
-    }*/
+    }
 
     Move *curr = (Move[256]){0};
     Move *end = legal_moves(board, curr);
@@ -200,8 +200,8 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth, U8 ply) {
     if (curr == end) {
         if (is_in_check(board)) {
             // mate
-            int side_coeff = (board->side_to_move * (-2) + 1);
-            return -(CHECKMATE_CP - ply); // TODO this is bad
+            //int side_coeff = (board->side_to_move * (-2) + 1);
+            return -(CHECKMATE_CP + depth); // TODO this is bad
         } else {
             // stalemate
             return 0; // TODO contempt score

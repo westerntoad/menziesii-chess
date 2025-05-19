@@ -11,7 +11,7 @@
 
 #define MAX_DEPTH 20
 
-#define CHECKMATE_CP (2 << 18)
+#define CHECKMATE_CP (2 << 15)
 
 U64 eval(Board *board, U8 depth);
 int piece_eval(Board *board);
