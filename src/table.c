@@ -1,4 +1,5 @@
 #include <string.h>
+#include "eval.h"
 #include "table.h"
 #include "types.h"
 #include "utils.h"
@@ -71,7 +72,9 @@ void tt_save(U64 key, U8 depth, int score, Move best, char type) {
     
     TTEntry* entry = &T_TABLE[key % TT_ENTRIES];
 
-    if ((entry->key == key) && (entry->depth > depth)) return;
+    if ((entry->key == key) && entry->depth > depth) return;
+    //if ((entry->key == key) && (entry->depth > depth || mate_depth(score))) return;
+    //if (entry->key != key) return;
 
     entry->key = key;
     entry->depth = depth;
@@ -105,6 +108,25 @@ U64 board_hash(Board* board) {
         hash ^= ZOBRIST_EP[((state >> 20) & 0x3f) % 8];
 
     return hash;
+}
+
+int mate_depth(int score) {
+    if (abs(score) <= CHECKMATE_CP)
+        return 0;
+
+    return abs(abs(score) - CHECKMATE_CP - 99);
+}
+
+int mate_score(int score) {
+    if (abs(score) <= CHECKMATE_CP)
+        return 0;
+
+    int depth = mate_depth(score) + 1;
+    int mate = depth / 2;
+    if (depth % 2 == 0)
+        mate *= -1;
+
+    return mate_depth(mate);
 }
 
 void print_tt(TTEntry* entry) {

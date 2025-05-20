@@ -11,6 +11,7 @@
 extern volatile int STOP_SEARCH;
 extern volatile int SEARCH_TIME;
 extern U64 NUM_NODES;
+extern U8 HIGHEST_DEPTH;
 struct timespec START_TIME, END_TIME;
 
 const int PIECE_VALUES[] = {
@@ -110,7 +111,7 @@ static int should_stop_search(U8 depth) {
 void reorder_moves(Move* list, int n, Move pv) {
     // TODO better reordering
     if (!pv) {
-        fprintf(stderr, "ERROR: passing null principle variation move to move reording");
+        fprintf(stderr, "ERROR: passing null principle variation move to move reording\n");
         return;
     }
 
@@ -119,7 +120,7 @@ void reorder_moves(Move* list, int n, Move pv) {
     for (i = 0; i < n && list[i] != pv; i++);
 
     if (i == n) {
-        fprintf(stderr, "ERROR: principle variation move not present in legal move list");
+        fprintf(stderr, "ERROR: principle variation move not present in legal move list\n");
         return;
     }
 
@@ -147,18 +148,8 @@ int quiesce(Board *board, int alpha, int beta) {
             curr++;
             continue;
         }
-        if (board->ply > 100) {
-            print_move(*curr);
-            printf("\n");
-            print_board(board);
-        }
         make_move(board, *curr);
         score = -quiesce(board, -beta, -alpha);
-        if (board->ply > 100) {
-            print_move(*curr);
-            printf("\n");
-            print_board(board);
-        }
         unmake_move(board, *curr);
 
         if (score > best)
@@ -176,20 +167,20 @@ int quiesce(Board *board, int alpha, int beta) {
     return best;
 }
 
-int alphabeta(Board *board, int alpha, int beta, U8 depth) {
+int alphabeta(Board *board, int alpha, int beta, U8 depth, U8 ply) {
     bool preempted = false;
     NUM_NODES++;
+    if (ply > HIGHEST_DEPTH)
+        HIGHEST_DEPTH = ply;
     
     if (is_threefold(board)) {
-        return 0;
+        return 0; // TODO contempt score
     }
     if (depth == 0)
-
         return quiesce(board, alpha, beta);
 
-    //TTEntry* tt_entry = tt_probe(get_hash(board));
-    TTEntry* tt_entry = NULL;
-    if (tt_entry && (tt_entry->depth >= depth || abs(tt_entry->score) > CHECKMATE_CP)) {
+    TTEntry* tt_entry = tt_probe(get_hash(board));
+    if (tt_entry && (tt_entry->depth >= depth)) {
         if (tt_entry->type == EXACT_NODE) {
             return tt_entry->score;
         } else if (tt_entry->type == ALL_NODE && tt_entry->score <= alpha) {
@@ -198,6 +189,8 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth) {
             return beta;
         }
     }
+    if (tt_entry && tt_entry->score > CHECKMATE_CP)
+        depth = tt_entry->depth;
 
     Move *curr = (Move[256]){0};
     Move *end = legal_moves(board, curr);
@@ -206,7 +199,7 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth) {
         if (is_in_check(board)) {
             // mate
             //int side_coeff = (board->side_to_move * (-2) + 1);
-            return -(CHECKMATE_CP + depth); // TODO this is bad
+            return -(CHECKMATE_CP + 99 - ply);
         } else {
             // stalemate
             return 0; // TODO contempt score
@@ -240,6 +233,7 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth) {
     }*/
 
     char flag = ALL_NODE;
+    int best_score = -INF;
 
     while (curr < end) {
         if (should_stop_search(depth)) {
@@ -248,18 +242,22 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth) {
         }
 
         make_move(board, *curr);
-        int score = -alphabeta(board, -beta, -alpha, depth-1);
+        int score = -alphabeta(board, -beta, -alpha, depth-1, ply+1);
         unmake_move(board, *curr);
+
+        if (score > best_score) {
+            best_score = score;
+
+            if (score > alpha) {
+                flag = EXACT_NODE;
+                best_move = *curr;
+                alpha = score;
+            }
+        }
 
         if (score >= beta) {
             tt_save(get_hash(board), depth, beta, best_move, CUT_NODE);
             return beta;
-        }
-        
-        if (score > alpha) {
-            flag = EXACT_NODE;
-            best_move = *curr;
-            alpha = score;
         }
         
         curr++;
@@ -276,7 +274,8 @@ void start_timer() {
 }
 
 U64 eval(Board *board, U8 depth) {
-    alphabeta(board, -INF, INF, depth);
+    HIGHEST_DEPTH = 0;
+    alphabeta(board, -INF, INF, depth, 0);
     return board_hash(board);
 }
 
