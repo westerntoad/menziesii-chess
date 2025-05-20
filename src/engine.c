@@ -94,16 +94,15 @@ static void* search(void* arg) {
         end = clock();
         entry = tt_probe(hash);
 
-        if (entry) {
+        if (entry && !STOP_SEARCH) {
             best = entry->best;
             make_move(board, best);
             entry = tt_probe(get_hash(board));
             if (entry)
                 ponder = entry->best;
             unmake_move(board, best);
-        }
-        if (!STOP_SEARCH)
             print_info(board, curr_depth, (double)(end - start) / CLOCKS_PER_SEC);
+        }
         
     } while (curr_depth < params.depth && !STOP_SEARCH);
     STOP_SEARCH = 0;
