@@ -220,7 +220,7 @@ void go_random() {
 }
 
 void start_search(SearchParams params) {
-    if (!CURR_BOARD)
+    if (!CURR_BOARD || SEARCHING)
         return;
 
     SearchParams* ptr = malloc(sizeof(SearchParams));

@@ -174,13 +174,13 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth, U8 ply) {
         HIGHEST_DEPTH = ply;
     
     if (is_threefold(board)) {
-        return 0;
+        return 0; // TODO contempt score
     }
     if (depth == 0)
         return quiesce(board, alpha, beta);
 
-    TTEntry* tt_entry = tt_probe(get_hash(board));
-    //TTEntry* tt_entry = NULL;
+    //TTEntry* tt_entry = tt_probe(get_hash(board));
+    TTEntry* tt_entry = NULL;
     if (tt_entry && (tt_entry->depth >= depth)) {
         if (tt_entry->type == EXACT_NODE) {
             return tt_entry->score;
@@ -201,7 +201,7 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth, U8 ply) {
         if (is_in_check(board)) {
             // mate
             //int side_coeff = (board->side_to_move * (-2) + 1);
-            return -(CHECKMATE_CP + depth); // TODO this is bad
+            return -(CHECKMATE_CP + 99 - ply);
         } else {
             // stalemate
             return 0; // TODO contempt score
@@ -260,8 +260,13 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth, U8 ply) {
         curr++;
     }
 
-    if (!preempted)
-        tt_save(get_hash(board), depth, alpha, best_move, flag);
+    if (!preempted) {
+        /*if (mate_depth(alpha)) {
+            tt_save(get_hash(board), mate_depth(alpha) + 2, alpha, best_move, flag);
+        } else {*/
+            tt_save(get_hash(board), depth, alpha, best_move, flag);
+        //}
+    }
 
     return alpha;
 }

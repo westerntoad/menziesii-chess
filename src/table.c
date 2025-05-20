@@ -72,7 +72,9 @@ void tt_save(U64 key, U8 depth, int score, Move best, char type) {
     
     TTEntry* entry = &T_TABLE[key % TT_ENTRIES];
 
-    if ((entry->key == key) && (entry->depth > depth)) return;
+    if ((entry->key == key) && entry->depth > depth) return;
+    //if ((entry->key == key) && (entry->depth > depth || mate_depth(score))) return;
+    //if (entry->key != key) return;
 
     entry->key = key;
     entry->depth = depth;
@@ -108,17 +110,24 @@ U64 board_hash(Board* board) {
     return hash;
 }
 
+int mate_depth(int score) {
+    if (abs(score) <= CHECKMATE_CP)
+        return 0;
+
+    return abs(abs(score) - CHECKMATE_CP - 99);
+}
+
 int mate_score(TTEntry* entry) {
-    printf("%d, %d\n", entry->score, CHECKMATE_CP);
     if (abs(entry->score) <= CHECKMATE_CP)
         return 0;
 
-    int depth = abs(entry->score) - CHECKMATE_CP + 1;
+    /*int depth = mate_depth(entry->score) + 1;
     int mate = depth / 2;
     if (depth % 2 == 1)
-        mate *= -1;
+        mate *= -1;*/
 
-    return mate;
+    //return mate;
+    return mate_depth(entry->score);
 }
 
 void print_tt(TTEntry* entry) {
