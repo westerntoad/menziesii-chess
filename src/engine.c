@@ -34,13 +34,16 @@ static void print_info(Board* board, U8 depth, double time) {
     if (!entry)
         return;
 
-    int tt_mate_score = mate_score(entry);
-    int side_coeff = (CURR_BOARD->side_to_move * (-2) + 1);
 
     printf("info depth %d seldepth %d score ", depth, HIGHEST_DEPTH);
-    if (tt_mate_score) {
-        printf("mate %d", tt_mate_score);
+    int tt_mate_depth = mate_depth(entry->score);
+    if (tt_mate_depth) {
+        int augmented = (tt_mate_depth + 1) / 2;
+        if (tt_mate_depth % 2 == 0)
+            augmented *= -1;
+        printf("mate %d", augmented);
     } else {
+        int side_coeff = (CURR_BOARD->side_to_move * (-2) + 1);
         printf("cp %d", entry->score * side_coeff);
     }
 

@@ -180,7 +180,6 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth, U8 ply) {
         return quiesce(board, alpha, beta);
 
     TTEntry* tt_entry = tt_probe(get_hash(board));
-    //TTEntry* tt_entry = NULL;
     if (tt_entry && (tt_entry->depth >= depth)) {
         if (tt_entry->type == EXACT_NODE) {
             return tt_entry->score;
@@ -264,13 +263,8 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth, U8 ply) {
         curr++;
     }
 
-    if (!preempted) {
-        /*if (mate_depth(alpha)) {
-            tt_save(get_hash(board), mate_depth(alpha) + 2, alpha, best_move, flag);
-        } else {*/
-            tt_save(get_hash(board), depth, alpha, best_move, flag);
-        //}
-    }
+    if (!preempted)
+        tt_save(get_hash(board), depth, alpha, best_move, flag);
 
     return alpha;
 }

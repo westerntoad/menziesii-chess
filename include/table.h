@@ -31,7 +31,7 @@ TTEntry* tt_probe(U64 key);
 void tt_save(U64 key, U8 depth, int score, Move best, char type);
 U64 board_hash(Board* board);
 int mate_depth(int score);
-int mate_score(TTEntry* entry);
+int mate_score(int score);
 void print_tt(TTEntry* entry);
 void print_table();
 

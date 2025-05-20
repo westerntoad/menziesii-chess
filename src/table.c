@@ -117,17 +117,16 @@ int mate_depth(int score) {
     return abs(abs(score) - CHECKMATE_CP - 99);
 }
 
-int mate_score(TTEntry* entry) {
-    if (abs(entry->score) <= CHECKMATE_CP)
+int mate_score(int score) {
+    if (abs(score) <= CHECKMATE_CP)
         return 0;
 
-    /*int depth = mate_depth(entry->score) + 1;
+    int depth = mate_depth(score) + 1;
     int mate = depth / 2;
-    if (depth % 2 == 1)
-        mate *= -1;*/
+    if (depth % 2 == 0)
+        mate *= -1;
 
-    //return mate;
-    return mate_depth(entry->score);
+    return mate_depth(mate);
 }
 
 void print_tt(TTEntry* entry) {
