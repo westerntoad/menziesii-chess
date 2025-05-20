@@ -22,6 +22,7 @@ void unmake_move(Board *board, Move move);
 Move* legal_moves(Board *board, Move *list);
 bool is_in_check(Board *board);
 bool is_threefold(Board *board);
+bool is_50_move_rule(Board *board);
 U64 get_hash(Board *board);
 Move random_move(Board *board);
 Move move_from_str(Board *board, char* str);

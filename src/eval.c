@@ -206,6 +206,9 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth, U8 ply) {
         }
     }
 
+    if (is_50_move_rule(board))
+        return 0; // TODO contempt score
+
     if (is_in_check(board))
         depth++;
 

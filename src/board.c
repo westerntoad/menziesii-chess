@@ -610,6 +610,10 @@ bool is_in_check(Board *board) {
     return get_checkers(board, board->side_to_move) != 0;
 }
 
+bool is_50_move_rule(Board *board) {
+    return half_moves(board) >= 100;
+}
+
 bool is_threefold(Board *board) {
     int i, reps = 0;
     U64 hash = get_hash(board);
