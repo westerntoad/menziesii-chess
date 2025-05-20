@@ -196,12 +196,8 @@ void print_engine() {
     if (!CURR_BOARD)
         return;
 
-    printf("FEN: %s\n", to_fen(CURR_BOARD));
-    if (UCI_DEBUG_ON) {
-        printf("Internl Hash:  %lx\n", get_hash(CURR_BOARD));
-        printf("External Hash: %lx\n", board_hash(CURR_BOARD));
-        printf("Is Threefold:  %d\n", is_threefold(CURR_BOARD));
-    }
+    printf("FEN:  %s\n", to_fen(CURR_BOARD));
+    printf("Hash: %lx\n", get_hash(CURR_BOARD));
     print_board(CURR_BOARD);
 
 }
@@ -228,8 +224,19 @@ void start_search(SearchParams params) {
 
     SearchParams* ptr = malloc(sizeof(SearchParams));
 
-    if (ptr != NULL) {
-        *ptr = params;
+    if (ptr == NULL) {
+        fprintf(stderr, "Error: failed to allocate space for search params.");
+        return;
+    }
+
+    *ptr = params;
+
+    if (ptr->movetime == 0 && !ptr->infinite) {
+        if (CURR_BOARD->side_to_move == WHITE) {
+            ptr->movetime = MIN(1000, ptr->winc) + MIN(2000, ptr->wtime / 4);
+        } else {
+            ptr->movetime = MIN(1000, ptr->binc) + MIN(2000, ptr->btime / 4);
+        }
     }
 
     SEARCHING = 1;
