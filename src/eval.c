@@ -179,8 +179,8 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth, U8 ply) {
     if (depth == 0)
         return quiesce(board, alpha, beta);
 
-    //TTEntry* tt_entry = tt_probe(get_hash(board));
-    TTEntry* tt_entry = NULL;
+    TTEntry* tt_entry = tt_probe(get_hash(board));
+    //TTEntry* tt_entry = NULL;
     if (tt_entry && (tt_entry->depth >= depth)) {
         if (tt_entry->type == EXACT_NODE) {
             return tt_entry->score;
@@ -190,9 +190,8 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth, U8 ply) {
             return beta;
         }
     }
-    if (tt_entry && tt_entry->score > CHECKMATE_CP) {
+    if (tt_entry && tt_entry->score > CHECKMATE_CP)
         depth = tt_entry->depth;
-    }
 
     Move *curr = (Move[256]){0};
     Move *end = legal_moves(board, curr);
@@ -235,6 +234,7 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth, U8 ply) {
     }*/
 
     char flag = ALL_NODE;
+    int best_score = -INF;
 
     while (curr < end) {
         if (should_stop_search(depth)) {
@@ -246,15 +246,19 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth, U8 ply) {
         int score = -alphabeta(board, -beta, -alpha, depth-1, ply+1);
         unmake_move(board, *curr);
 
+        if (score > best_score) {
+            best_score = score;
+
+            if (score > alpha) {
+                flag = EXACT_NODE;
+                best_move = *curr;
+                alpha = score;
+            }
+        }
+
         if (score >= beta) {
             tt_save(get_hash(board), depth, beta, best_move, CUT_NODE);
             return beta;
-        }
-        
-        if (score > alpha) {
-            flag = EXACT_NODE;
-            best_move = *curr;
-            alpha = score;
         }
         
         curr++;
