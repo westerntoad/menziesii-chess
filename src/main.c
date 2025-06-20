@@ -22,8 +22,8 @@
 // limit on selective depth for check
 
 // BUGS
-// position fen 1k6/7R/2K5/8/8/8/8/8 b - - 2 2 
-// # incorrect mate
+// position fen r3kb1r/ppp2p1p/2n4p/4p3/3qN1B1/3P1Q2/PPP4P/R4R1K b kq - 1 16
+// # walking into mate?
 
 int main(void) {
     srand(time(NULL));
