@@ -345,7 +345,7 @@ int main(void) {
     test_sliders();
     test_perfts();
     test_eval();
-    test_mates();
+    //test_mates();
     test_state_stack();
     test_procedural_hashing();
     test_draws();

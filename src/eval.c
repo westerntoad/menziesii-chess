@@ -10,6 +10,7 @@
 
 extern volatile int STOP_SEARCH;
 extern volatile int SEARCH_TIME;
+extern volatile int CONTEMPT_CP;
 extern U64 NUM_NODES;
 extern U8 HIGHEST_DEPTH;
 struct timespec START_TIME, END_TIME;
@@ -174,7 +175,7 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth, U8 ply) {
         HIGHEST_DEPTH = ply;
     
     if (is_threefold(board)) {
-        return 0; // TODO contempt score
+        return CONTEMPT_CP;
     }
     if (depth == 0)
         return quiesce(board, alpha, beta);
@@ -202,12 +203,12 @@ int alphabeta(Board *board, int alpha, int beta, U8 depth, U8 ply) {
             return -(CHECKMATE_CP + 99 - ply);
         } else {
             // stalemate
-            return 0; // TODO contempt score
+            return CONTEMPT_CP;
         }
     }
 
     if (is_50_move_rule(board))
-        return 0; // TODO contempt score
+        return CONTEMPT_CP;
 
     if (is_in_check(board))
         depth++;

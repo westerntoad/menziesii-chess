@@ -15,6 +15,7 @@
 volatile int STOP_SEARCH;
 volatile int SEARCH_TIME;
 volatile int SEARCHING;
+volatile int CONTEMPT_CP;
 
 U64 NUM_NODES;
 U8 HIGHEST_DEPTH;
@@ -82,7 +83,7 @@ static void* search(void* arg) {
     U8 curr_depth = 0;
     U64 hash = get_hash(board);
     Move best = 0, ponder = 0;
-    clock_t start = clock(), end = clock();
+    clock_t start, end;
 
     start_timer();
     do {
@@ -130,6 +131,7 @@ void engine_init() {
 
     STOP_SEARCH = 0;
     SEARCHING = 0;
+    CONTEMPT_CP = 0;
     CURR_BOARD = NULL;
     init_move_lookup_tables();
     init_zobrist();
