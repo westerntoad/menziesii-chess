@@ -121,12 +121,12 @@ int mate_score(int score) {
     if (abs(score) <= CHECKMATE_CP)
         return 0;
 
-    int depth = mate_depth(score) + 1;
-    int mate = depth / 2;
+    int depth = mate_depth(score);
+    int augmented = (depth + 1) / 2;
     if (depth % 2 == 0)
-        mate *= -1;
+        augmented *= -1;
 
-    return mate_depth(mate);
+    return augmented;
 }
 
 void print_tt(TTEntry* entry) {

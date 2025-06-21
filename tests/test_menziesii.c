@@ -6,6 +6,9 @@
 #include "movegen.h"
 #include "utils.h"
 
+#define KNRM  "\x1B[0m" // Reset to normal
+#define KRED  "\x1B[31m" // Red foreground
+
 static int TESTS_RUN;
 static int TESTS_PASSED;
 static bool PERFTS_PASSED;
@@ -89,22 +92,23 @@ static void assert_eval(char* fen, int depth, int upper_bound, int lower_bound) 
 
 static void assert_mate(char* fen, int in) {
     Board *board = from_fen(fen);
-    eval(board, in*2+2);
+    eval(board, abs(in*2)+2);
     TTEntry* entry = tt_probe(get_hash(board));
     TESTS_RUN++;
 
+    printf(KRED);
     if (!entry) {
         printf("MATE ASSERTION FAILED - NO TRANSPOSITION TABLE ENTRY\n");
-    } else if (mate_score(entry) == in) {
+    } else if (mate_score(entry->score) == in) {
         TESTS_PASSED++;
     } else {
-        if (abs(entry->score) <= CHECKMATE_CP) {
-            printf("MATE ASSERTION FAILED - NOT MATE\nFEN       %s\nACTUAL    %d cp\nDEPTH     %d\n", fen, entry->score, entry->depth);
+        if (mate_depth(entry->score) == 0) {
+            printf("MATE ASSERTION FAILED - NOT MATE\nFEN       %s\nACTUAL    %d cp\nDEPTH     %d\n\n", fen, entry->score, entry->depth);
         } else {
-            printf("MATE ASSERTION FAILED - INCORRECT DEPTH\nFEN       %s\nEXPECTED  %d\nACTUAL    %d\n", fen, in, mate_score(entry));
+            printf("MATE ASSERTION FAILED - INCORRECT SCORE\nFEN       %s\nEXPECTED  %d\nACTUAL    %d\n\n", fen, in, mate_score(entry->score));
         }
-
     }
+    printf(KNRM);
     
     free(board);
 }
@@ -250,7 +254,6 @@ static void test_mates() {
     printf("Testing mates...\n");
 
     // MATES IN 1
-    //assert_mate("k7/4R3/4PR2/5P2/8/8/8/7K w - - 0 1", 1);
     assert_mate("k7/8/6b1/8/5b2/4b3/8/7K b - - 0 1", 1);
     assert_mate("r1bqkbnr/1ppp1ppp/p1n5/4p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 0 4", 1);
 
@@ -337,7 +340,7 @@ int main(void) {
     setbuf(stdout, NULL);
     init_move_lookup_tables();
     init_zobrist();
-    tt_set_size(512);
+    tt_set_size(256);
     TESTS_RUN = 0;
     TESTS_PASSED = 0;
 
@@ -345,7 +348,7 @@ int main(void) {
     test_sliders();
     test_perfts();
     test_eval();
-    //test_mates();
+    test_mates();
     test_state_stack();
     test_procedural_hashing();
     test_draws();
